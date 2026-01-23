@@ -112,7 +112,8 @@
             </a>
 
             <div style="margin-top: auto; margin-bottom: auto;">
-                <div style="position: relative; display: inline-block; margin-bottom: 1.5rem;">
+                <div id="profile-photo-wrapper"
+                    style="position: relative; display: inline-block; margin-bottom: 1.5rem;">
                     {% if user.profile_photo %}
                     <img src="/{{ user.profile_photo }}"
                         style="width:140px; height:140px; border-radius: 40px; object-fit: cover; box-shadow: 20px 20px 60px #d1d5db, -20px -20px 60px #ffffff;">
@@ -123,8 +124,8 @@
                     </div>
                     {% endif %}
 
-                    <div
-                        style="position: absolute; bottom: -10px; right: -10px; background: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft);">
+                    <div onclick="triggerPhotoUpload()"
+                        style="position: absolute; bottom: -10px; right: -10px; background: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft); cursor: pointer; transition: transform 0.2s;">
                         <span class="material-icons" style="color: #F6AD55; font-size: 20px;">edit</span>
                     </div>
                 </div>
@@ -144,6 +145,7 @@
             </div>
         </aside>
 
+        <!-- RIGHT: Free Floating Form -->
         <!-- RIGHT: Free Floating Form -->
         <main class="profile-content">
             <!-- Background element -->
@@ -175,19 +177,15 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-top: 1rem;">
-                        <div>
-                            <label>Phone Number</label>
-                            <input type="text" name="phone" value="{{ user.phone or '' }}" class="input-pill"
-                                placeholder="+91 00000 00000" required>
-                        </div>
-
-                        <div>
-                            <label>Update Photo</label>
-                            <input type="file" name="photo" accept="image/*" class="input-pill"
-                                style="font-size: 0.9rem;">
-                        </div>
+                    <div style="margin-top: 2rem;">
+                        <label>Phone Number</label>
+                        <input type="text" name="phone" value="{{ user.phone or '' }}" class="input-pill"
+                            placeholder="+91 00000 00000" style="max-width: 50%;" required>
                     </div>
+
+                    <!-- Hidden Photo Input -->
+                    <input type="file" id="hidden-photo-input" name="photo" accept="image/*" style="display: none;"
+                        onchange="previewImage(this)">
 
                     <div style="margin-top: 3rem; display: flex; justify-content: flex-end;">
                         <button type="submit" class="btn btn-primary" style="padding: 1rem 3rem; border-radius: 50px;">
@@ -199,6 +197,39 @@
         </main>
     </div>
 
+    <!-- Image Preview Script -->
+    <script>
+        function triggerPhotoUpload() {
+            document.getElementById('hidden-photo-input').click();
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    var wrapper = document.getElementById('profile-photo-wrapper');
+
+                    // Remove existing content except edit button (simulated by finding img or div)
+                    var existingImg = wrapper.querySelector('img');
+                    var existingPlaceholder = wrapper.querySelector('div:not([onclick])'); // Exclude the edit button which should have onclick now
+
+                    if (existingImg) {
+                        existingImg.src = e.target.result;
+                    } else if (existingPlaceholder) {
+                        // Replace placeholder with new img
+                        var newImg = document.createElement('img');
+                        newImg.src = e.target.result;
+                        newImg.style.cssText = "width:140px; height:140px; border-radius: 40px; object-fit: cover; box-shadow: 20px 20px 60px #d1d5db, -20px -20px 60px #ffffff;";
+
+                        wrapper.replaceChild(newImg, existingPlaceholder);
+                    }
+                }
+
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
 </body>
 
 </html>

@@ -12,6 +12,77 @@ from ai_matcher import final_match
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
 
+# ---------- MIDDLEWARE: BLOCK CHECK & SESSION INVALIDATION ----------
+@app.before_request
+def check_user_status():
+    # Define exempt paths that don't need status checks
+    exempt_paths = ['/login', '/logout', '/account-blocked', '/request-unblock', '/static', '/auth/check-status']
+    
+    # Skip if path starts with exempt prefix (simple string check)
+    for path in exempt_paths:
+        if request.path.startswith(path) or request.path == "/":
+            return
+
+    # If user is logged in, check status
+    if "user_id" in session:
+        db = get_db()
+        if db is None:
+            return
+            
+        user = db.users.find_one({"_id": ObjectId(session["user_id"])})
+        
+        # DEBUG LOGGING
+        print(f"Middleware Check: UserID={session['user_id']} | Found={bool(user)} | Active={user.get('is_active') if user else 'N/A'}")
+
+        if not user:
+            # User in session but not in DB? specific edge case. Log them out.
+            session.clear()
+            return redirect("/login")
+        
+        # If user is blocked (is_active=False)
+        if not user.get("is_active", True):
+            print(">> BLOCKING USER - REDIRECTING <<")
+            # Force clear any residual 'next' redirects
+            return redirect("/account-blocked")
+
+        # Session Version Check
+        db_version = user.get("session_version", 0)
+        session_ver = session.get("session_version", 0)
+        
+        if db_version != session_ver:
+             print(f"Session Version Mismatch: DB={db_version} vs Session={session_ver} - Logging Out")
+             session.clear()
+             return redirect("/login")
+
+# ---------- STATUS POLLER ----------
+@app.route("/auth/check-status")
+def check_status():
+    if "user_id" not in session:
+        return {"status": "unauthorized"}, 401
+        
+    db = get_db()
+    user = db.users.find_one({"_id": ObjectId(session["user_id"])})
+    
+    if not user:
+        return {"status": "invalid_session"}, 401
+        
+    if not user.get("is_active", True):
+        return {"status": "inactive"}
+        
+    # Check session version
+    if user.get("session_version", 0) != session.get("session_version", 0):
+         return {"status": "invalid_session"}
+         
+    return {"status": "active"}
+
+# ---------- PREVENT CACHING ----------
+@app.after_request
+def add_header(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
+
 # ---------- UPLOAD CONFIG ----------
 os.makedirs("uploads/lost", exist_ok=True)
 os.makedirs("uploads/found", exist_ok=True)
@@ -103,11 +174,17 @@ def login():
         password = request.form["password"]
 
         db = get_db()
-        user = db.users.find_one({"email": email, "is_active": True})
+        # Find user regardless of active status
+        user = db.users.find_one({"email": email})
 
         if user and check_password_hash(user["password"], password):
             session["user_id"] = str(user["_id"])
             session["role"] = user["role"]
+            session["session_version"] = user.get("session_version", 0)
+
+            # If blocked, redirect to blocked page immediately
+            if not user.get("is_active", True):
+                return redirect("/account-blocked")
 
             if user["role"] == "super_admin":
                 return redirect("/superadmin/dashboard")
@@ -181,7 +258,10 @@ def user_profile():
         }
 
         if photo and photo.filename:
-            photo_path = f"uploads/profile/{photo.filename}"
+            # Generate unique filename to prevent caching
+            timestamp = int(datetime.datetime.utcnow().timestamp())
+            filename = f"{user_id}_{timestamp}_{photo.filename}"
+            photo_path = f"uploads/profile/{filename}"
             photo.save(photo_path)
             update_data["profile_photo"] = photo_path
 
@@ -319,7 +399,10 @@ def handle_profile_update(role, template_name, redirect_url):
         }
 
         if photo and photo.filename:
-            photo_path = f"uploads/profile/{photo.filename}"
+            # Generate unique filename to prevent caching
+            timestamp = int(datetime.datetime.utcnow().timestamp())
+            filename = f"{user_id}_{timestamp}_{photo.filename}"
+            photo_path = f"uploads/profile/{filename}"
             photo.save(photo_path)
             update_data["profile_photo"] = photo_path
 
@@ -377,7 +460,10 @@ def report_lost():
         saved_image_paths = []
         for image in images:
              if image and image.filename and len(saved_image_paths) < 5:
-                image_path = f"uploads/lost/{image.filename}"
+                # Generate unique filename
+                timestamp = int(datetime.datetime.utcnow().timestamp())
+                filename = f"{session['user_id']}_{timestamp}_{image.filename}"
+                image_path = f"uploads/lost/{filename}"
                 image.save(image_path)
                 saved_image_paths.append(image_path)
         
@@ -428,7 +514,10 @@ def report_found():
         saved_image_paths = []
         for image in images:
              if image and image.filename and len(saved_image_paths) < 5:
-                image_path = f"uploads/found/{image.filename}"
+                # Generate unique filename
+                timestamp = int(datetime.datetime.utcnow().timestamp())
+                filename = f"{session['user_id']}_{timestamp}_{image.filename}"
+                image_path = f"uploads/found/{filename}"
                 image.save(image_path)
                 saved_image_paths.append(image_path)
         
@@ -642,11 +731,23 @@ def activate_user(user_id):
         return "Access Denied: Admins cannot activate Super Admins", 403
 
     db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"is_active": True}})
+    
+    # Log Action
+    db.admin_actions.insert_one({
+        "admin_id": ObjectId(session["user_id"]),
+        "target_user_id": ObjectId(user_id),
+        "action": "activate",
+        "reason": "Manual Activation",
+        "timestamp": datetime.datetime.utcnow()
+    })
+
+    flash(f"User {target_user.get('name', 'User')} has been activated.")
     return redirect("/admin/users")
 
 
 # ---------- DEACTIVATE USER ----------
-@app.route("/admin/user/deactivate/<user_id>")
+# ---------- DEACTIVATE USER ----------
+@app.route("/admin/user/deactivate/<user_id>", methods=["POST"])
 def deactivate_user(user_id):
     if session.get("role") not in ["admin", "super_admin"]:
         abort(403)
@@ -661,8 +762,136 @@ def deactivate_user(user_id):
     if session["role"] == "admin" and target_user["role"] == "super_admin":
         return "Access Denied: Admins cannot deactivate Super Admins", 403
 
-    db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"is_active": False}})
+    reason = request.form.get("reason", "No reason provided")
+    
+    update_data = {
+        "is_active": False,
+        "blocked_at": datetime.datetime.utcnow(),
+        "block_reason": reason,
+    }
+    
+    # Increment session version to force logout
+    current_version = target_user.get("session_version", 0)
+    update_data["session_version"] = current_version + 1
+
+    db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update_data})
+    
+    # Log Action
+    db.admin_actions.insert_one({
+        "admin_id": ObjectId(session["user_id"]),
+        "target_user_id": ObjectId(user_id),
+        "action": "deactivate",
+        "reason": reason,
+        "timestamp": datetime.datetime.utcnow()
+    })
+    
+    # Confirm action
+    flash(f"User {target_user.get('name', 'User')} has been deactivated. They will be logged out immediately.")
     return redirect("/admin/users")
+
+# ---------- BLOCKED USER ROUTES ----------
+@app.route("/account-blocked")
+def account_blocked():
+    # If user is somehow active, send them back to dashboard
+    if "user_id" in session:
+        db = get_db()
+        user = db.users.find_one({"_id": ObjectId(session["user_id"])})
+        if user and user.get("is_active", True):
+            return redirect("/user/dashboard")
+    return render_template("account_blocked.html")
+
+@app.route("/request-unblock", methods=["POST"])
+def request_unblock():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    reason = request.form.get("reason")
+    proof = request.files.get("proof")
+    
+    proof_path = None
+    if proof and proof.filename:
+        # Secure filename with timestamp
+        timestamp = int(datetime.datetime.utcnow().timestamp())
+        filename = f"proof_{session['user_id']}_{timestamp}_{proof.filename}"
+        proof_path = f"uploads/profile/{filename}" # Store in uploads/profile for now or create new folder
+        proof.save(proof_path)
+
+    db = get_db()
+    
+    # Rate limit check (optional simple check: pending request exists?)
+    existing_request = db.unblock_requests.find_one({
+        "user_id": ObjectId(session["user_id"]),
+        "status": "pending"
+    })
+    
+    if existing_request:
+        flash("You already have a pending request.")
+        return redirect("/account-blocked")
+
+    db.unblock_requests.insert_one({
+        "user_id": ObjectId(session["user_id"]),
+        "reason": reason,
+        "proof_path": proof_path,
+        "status": "pending",
+        "created_at": datetime.datetime.utcnow()
+    })
+    
+    flash("Unblock request submitted successfully.")
+    return redirect("/account-blocked")
+
+# ---------- SUPER ADMIN : UNBLOCK REQUESTS ----------
+@app.route("/superadmin/unblock-requests")
+def view_unblock_requests():
+    if session.get("role") != "super_admin":
+        abort(403)
+
+    db = get_db()
+    
+    # Aggregate to join with user details
+    pipeline = [
+        {"$sort": {"created_at": -1}},
+        {"$lookup": {
+            "from": "users",
+            "localField": "user_id",
+            "foreignField": "_id",
+            "as": "user_info"
+        }},
+        {"$unwind": "$user_info"}
+    ]
+    
+    requests = list(db.unblock_requests.aggregate(pipeline))
+    
+    # Format IDs for template
+    for req in requests:
+        req['id'] = str(req['_id'])
+        req['user_id'] = str(req['user_id'])
+        
+    return render_template("superadmin_requests.html", requests=requests)
+
+@app.route("/superadmin/request/<request_id>/<action>", methods=["POST"])
+def process_unblock_request(request_id, action):
+    if session.get("role") != "super_admin":
+        abort(403)
+        
+    db = get_db()
+    req = db.unblock_requests.find_one({"_id": ObjectId(request_id)})
+    
+    if not req:
+        return "Request not found", 404
+        
+    if action == "approve":
+        # 1. Activate User
+        db.users.update_one({"_id": req["user_id"]}, {"$set": {"is_active": True}})
+        # 2. Update Request Status
+        db.unblock_requests.update_one({"_id": ObjectId(request_id)}, {"$set": {"status": "approved"}})
+        flash("User unblocked successfully.")
+        
+    elif action == "reject":
+        # Update Request Status
+        db.unblock_requests.update_one({"_id": ObjectId(request_id)}, {"$set": {"status": "rejected"}})
+        flash("Unblock request rejected.")
+        
+    return redirect("/superadmin/unblock-requests")
 
 # ---------- CREATE ADMIN (Super Admin Only) ----------
 @app.route("/superadmin/create-admin", methods=["GET", "POST"])

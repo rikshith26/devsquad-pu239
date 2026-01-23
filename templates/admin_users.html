@@ -29,7 +29,8 @@
             <span class="material-icons">settings</span>
             Settings
         </a>
-        <a href="/admin/profile" class="nav-link">
+        <a href="{{ '/superadmin/profile' if session.get('role') == 'super_admin' else '/admin/profile' }}"
+            class="nav-link">
             <span class="material-icons">account_circle</span>
             Profile
         </a>
@@ -111,10 +112,10 @@
                                 {% if session['role'] == 'super_admin' or (session['role'] == 'admin' and u.role !=
                                 'super_admin') %}
                                 {% if u.is_active %}
-                                <a href="/admin/user/deactivate/{{ u.user_id }}"
-                                    style="color: #EF4444; text-decoration: none; font-weight: 500; font-size: 0.9rem; display: flex; align-items: center; gap: 0.25rem;">
+                                <button onclick="openDeactivateModal('{{ u.user_id }}', '{{ u.name }}')"
+                                    style="background: none; border: none; padding: 0; cursor: pointer; color: #EF4444; font-weight: 500; font-size: 0.9rem; display: flex; align-items: center; gap: 0.25rem;">
                                     Deactivate
-                                </a>
+                                </button>
                                 {% else %}
                                 <a href="/admin/user/activate/{{ u.user_id }}"
                                     style="color: #10B981; text-decoration: none; font-weight: 500; font-size: 0.9rem; display: flex; align-items: center; gap: 0.25rem;">
@@ -132,6 +133,64 @@
             </div>
         </div>
     </main>
+
+    <!-- Deactivation Modal -->
+    <div id="deactivateModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div
+            style="background: white; padding: 2rem; border-radius: 12px; width: 90%; max-width: 400px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <h2 style="margin-top: 0; color: var(--text-main);">Confirm Deactivation</h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+                Are you sure you want to deactivate <strong id="modalUserName">User</strong>?
+                <br><br>
+                <span style="color: #EF4444; font-size: 0.9rem;"><span class="material-icons"
+                        style="font-size: 14px; vertical-align: middle;">warning</span> This will immediately log the
+                    user out from all sessions.</span>
+            </p>
+
+            <form id="deactivateForm" method="POST" action="">
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-main);">Block
+                    Reason</label>
+                <textarea name="reason" rows="3" required placeholder="Enter reason for deactivation..."
+                    style="width: 100%; padding: 0.75rem; border: 1px solid #E2E8F0; border-radius: 8px; margin-bottom: 1.5rem; font-family: inherit; font-size: 0.95rem;"></textarea>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeDeactivateModal()"
+                        style="padding: 0.75rem 1.5rem; background: #F1F5F9; color: var(--text-muted); border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        style="padding: 0.75rem 1.5rem; background: #EF4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                        Deactivate User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openDeactivateModal(userId, userName) {
+            const modal = document.getElementById('deactivateModal');
+            const form = document.getElementById('deactivateForm');
+            const nameSpan = document.getElementById('modalUserName');
+
+            form.action = `/admin/user/deactivate/${userId}`;
+            nameSpan.textContent = userName;
+            modal.style.display = 'flex';
+        }
+
+        function closeDeactivateModal() {
+            document.getElementById('deactivateModal').style.display = 'none';
+        }
+
+        // Close on outside click
+        window.onclick = function (event) {
+            const modal = document.getElementById('deactivateModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
 </body>
 
 </html>

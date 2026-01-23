@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unblock Requests - Super Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="dashboard-container">
+    <nav class="sidebar">
+        <div
+            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; color: var(--text-main);">
+            <span class="material-icons text-gradient" style="font-size: 28px;">admin_panel_settings</span>
+            Super Admin
+        </div>
+
+        <a href="/superadmin/dashboard" class="nav-link">
+            <span class="material-icons">arrow_back</span>
+            Back to Home
+        </a>
+        <a href="#" class="nav-link active">
+            <span class="material-icons">lock_open</span>
+            Unblock Requests
+        </a>
+
+        <div style="margin-top: auto;">
+            <a href="/logout" class="nav-link" style="color: var(--accent-red);">
+                <span class="material-icons" style="color: var(--accent-red);">logout</span>
+                Logout
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-main);">Unblock Requests</h1>
+                <p style="color: var(--text-muted); font-size: 1.1rem;">Review and manage blocked account appeals.</p>
+            </div>
+            <button class="btn btn-secondary" onclick="window.location.reload()">
+                <span class="material-icons" style="margin-right: 0.5rem;">refresh</span>
+                Refresh
+            </button>
+        </header>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div style="padding: 1rem; background: #ECFDF5; color: #047857; border-radius: 12px; margin-bottom: 2rem;">
+            {{ messages[0] }}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="fade-in">
+            <!-- Requests List -->
+            <div class="table-container"
+                style="background: white; border-radius: 16px; padding: 1.5rem; border: 1px solid #E2E8F0;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #F1F5F9; text-align: left;">
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">Date</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">User</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600; width: 30%;">Reason
+                            </th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">Proof</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">Status</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if requests %}
+                        {% for req in requests %}
+                        <tr style="border-bottom: 1px solid #F1F5F9;">
+                            <td style="padding: 1rem; color: var(--text-muted);">
+                                {{ req.created_at.strftime('%Y-%m-%d') }}
+                            </td>
+                            <td style="padding: 1rem;">
+                                <div style="font-weight: 500;">{{ req.user_info.name }}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">{{ req.user_info.email }}
+                                </div>
+                            </td>
+                            <td style="padding: 1rem;">
+                                <p style="margin: 0; line-height: 1.5; font-size: 0.95rem;">{{ req.reason }}</p>
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% if req.proof_path %}
+                                <a href="/{{ req.proof_path }}" target="_blank"
+                                    style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; color: #4F46E5; font-weight: 500; font-size: 0.9rem; background: #EEF2FF; padding: 0.5rem 1rem; border-radius: 8px;">
+                                    <span class="material-icons" style="font-size: 18px;">attachment</span>
+                                    View Proof
+                                </a>
+                                {% else %}
+                                <span style="color: var(--text-muted); font-style: italic; font-size: 0.9rem;">No proof
+                                    attached</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% if req.status == 'pending' %}
+                                <span
+                                    style="background: #FFFBEB; color: #D97706; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.85rem; font-weight: 500;">Pending</span>
+                                {% elif req.status == 'approved' %}
+                                <span
+                                    style="background: #ECFDF5; color: #047857; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.85rem; font-weight: 500;">Approved</span>
+                                {% elif req.status == 'rejected' %}
+                                <span
+                                    style="background: #FEF2F2; color: #DC2626; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.85rem; font-weight: 500;">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% if req.status == 'pending' %}
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <form action="/superadmin/request/{{ req.id }}/approve" method="POST"
+                                        style="display:inline;">
+                                        <button type="submit" class="btn btn-primary"
+                                            style="padding: 0.5rem 1rem; font-size: 0.85rem; background: #10B981; border: none; border-radius: 6px;">
+                                            Approve
+                                        </button>
+                                    </form>
+                                    <form action="/superadmin/request/{{ req.id }}/reject" method="POST"
+                                        style="display:inline;">
+                                        <button type="submit" class="btn btn-secondary"
+                                            style="padding: 0.5rem 1rem; font-size: 0.85rem; background: white; border: 1px solid #EF4444; color: #EF4444; border-radius: 6px;">
+                                            Reject
+                                        </button>
+                                    </form>
+                                </div>
+                                {% else %}
+                                <span style="color: var(--text-muted); font-size: 0.9rem;">Processed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 4rem;">
+                                <span class="material-icons"
+                                    style="font-size: 48px; color: #E2E8F0; margin-bottom: 1rem;">inbox</span>
+                                <p style="color: var(--text-muted);">No pending unblock requests.</p>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Blocked - Lost & Found AI</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background: #F8FAFC;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .blocked-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background: #FEF2F2;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+        }
+
+        .icon-circle .material-icons {
+            font-size: 40px;
+            color: #EF4444;
+        }
+
+        h1 {
+            color: #1F2937;
+            margin-bottom: 0.5rem;
+            font-size: 1.75rem;
+        }
+
+        p {
+            color: #6B7280;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            text-align: left;
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #374151;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        textarea,
+        input[type="file"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #6366F1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-submit {
+            background: #4F46E5;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-submit:hover {
+            background: #4338CA;
+        }
+
+        .alert {
+            padding: 1rem;
+            background: #ECFDF5;
+            color: #047857;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="blocked-card">
+        <div class="icon-circle">
+            <span class="material-icons">block</span>
+        </div>
+        <h1>Account Suspended</h1>
+        <p>Your account has been deactivated by the administration. You cannot access dashboard features at this time.
+        </p>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="alert">
+            {{ messages[0] }}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <form action="/request-unblock" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Reason for Unblock Request</label>
+                <textarea name="reason" rows="4" placeholder="Explain why your account should be reactivated..."
+                    required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Supporting Document (Optional)</label>
+                <input type="file" name="proof">
+                <small style="color: #9CA3AF; display: block; margin-top: 5px;">Upload ID or relevant proof if
+                    needed.</small>
+            </div>
+
+            <button type="submit" class="btn-submit">Submit Request</button>
+        </form>
+
+        <div style="margin-top: 2rem;">
+            <a href="/logout" style="color: #6B7280; text-decoration: none; font-size: 0.9rem;">Logout</a>
+        </div>
+    </div>
+
+</body>
+
+</html>

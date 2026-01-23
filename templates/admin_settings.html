@@ -29,7 +29,8 @@
             <span class="material-icons">settings</span>
             Settings
         </a>
-        <a href="/admin/profile" class="nav-link">
+        <a href="{{ '/superadmin/profile' if session.get('role') == 'super_admin' else '/admin/profile' }}"
+            class="nav-link">
             <span class="material-icons">account_circle</span>
             Profile
         </a>

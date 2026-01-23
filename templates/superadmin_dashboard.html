@@ -45,6 +45,10 @@
                 <span class="material-icons" style="margin-right: 0.5rem;">person_add</span>
                 Create Admin
             </a>
+            <a href="/superadmin/unblock-requests" class="btn btn-primary" style="background: #F59E0B; border: none;">
+                <span class="material-icons" style="margin-right: 0.5rem;">lock_open</span>
+                Unblock Requests
+            </a>
         </div>
 
         <!-- Divider -->
@@ -77,6 +81,7 @@
 
     </div>
 
+    <script src="{{ url_for('static', filename='auth_check.js') }}"></script>
 </body>
 
 </html>
