@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Messages - Lost & Found AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="dashboard-container">
+    <nav class="sidebar">
+        <div
+            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; color: var(--text-main);">
+            <span class="material-icons text-gradient" style="font-size: 28px;">search</span>
+            Lost & Found
+        </div>
+        <a href="/user/dashboard" class="nav-link">
+            <span class="material-icons">dashboard</span>
+            Dashboard
+        </a>
+        <a href="/user/chats" class="nav-link active">
+            <span class="material-icons">chat</span>
+            Messages
+            {% if chats %}
+            <span
+                style="background: var(--accent-red); color: white; padding: 2px 6px; border-radius: 99px; font-size: 0.7rem; margin-left: auto;">{{
+                chats|length }}</span>
+            {% endif %}
+        </a>
+        <a href="/user/history" class="nav-link">
+            <span class="material-icons">history</span>
+            History
+        </a>
+        <div style="margin-top: auto;">
+            <a href="/logout" class="nav-link" style="color: var(--accent-red);">
+                <span class="material-icons" style="color: var(--accent-red);">logout</span>
+                Logout
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header style="margin-bottom: 2rem;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-main);">My Messages</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem;">Securely chat with other students about items.</p>
+        </header>
+
+        {% if chats %}
+        <div class="history-grid">
+            {% for chat in chats %}
+            <a href="/user/chat/{{ chat.id }}" class="history-card"
+                style="text-decoration: none; color: inherit; transition: transform 0.2s;">
+                <div
+                    style="width: 60px; height: 60px; background: #EEF2FF; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <span class="material-icons" style="color: #6366F1; font-size: 28px;">forum</span>
+                </div>
+                <div style="flex: 1;">
+                    <h4 style="margin: 0; font-size: 1.1rem;">{{ chat.item_name }}</h4>
+                    <p style="margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.9rem;">
+                        Role: {{ chat.role_desc }} • Started: {{ chat.created_at.strftime('%b %d') }}
+                    </p>
+                    <p
+                        style="margin: 0.5rem 0 0; color: var(--text-main); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">
+                        {{ chat.messages[-1].text }}
+                    </p>
+                </div>
+                <span class="material-icons" style="color: var(--text-muted);">chevron_right</span>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 6rem; background: white; border-radius: 24px;">
+            <span class="material-icons"
+                style="font-size: 48px; color: #CBD5E1; margin-bottom: 1rem;">chat_bubble_outline</span>
+            <p style="color: var(--text-muted);">No active chats. Chats start when an Admin approves a match.</p>
+        </div>
+        {% endif %}
+    </main>
+</body>
+
+</html>

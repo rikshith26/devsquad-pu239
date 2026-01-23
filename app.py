@@ -210,7 +210,31 @@ def user_dashboard():
     if user:
         user['id'] = str(user['_id'])
 
-    return render_template("user_dashboard.html", user=user)
+    # LEADERBOARD LOGIC
+    # aggregated counts of 'matched' or 'resolved' found items
+    pipeline = [
+        {"$match": {"status": {"$in": ["matched", "resolved"]}}},
+        {"$group": {"_id": "$user_id", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 5}
+    ]
+    formatted_leaderboard = []
+    
+    try:
+        leaderboard_data = list(db.found_items.aggregate(pipeline))
+        
+        for entry in leaderboard_data:
+            finder = db.users.find_one({"_id": entry["_id"]})
+            if finder:
+                formatted_leaderboard.append({
+                    "name": finder["name"],
+                    "count": entry["count"],
+                    "photo": finder.get("profile_photo")
+                })
+    except Exception as e:
+        print(f"Leaderboard Error: {e}")
+
+    return render_template("user_dashboard.html", user=user, leaderboard=formatted_leaderboard)
 
 # ---------- USER HISTORY ----------
 @app.route("/user/history")
@@ -447,8 +471,8 @@ def admin_dashboard():
     db = get_db()
     
     # Fetch all items
-    lost_items = list(db.lost_items.find())
-    found_items = list(db.found_items.find())
+    lost_items = list(db.lost_items.find({"status": "lost"}))
+    found_items = list(db.found_items.find({"status": "found"}))
 
     # Add id aliases for template compatibility
     for item in lost_items:
@@ -475,7 +499,112 @@ def admin_dashboard():
         matches=matches
     )
 
-# ---------- LOGOUT ----------
+# ---------- ADMIN: APPROVE MATCH ----------
+@app.route("/admin/approve-match/<lost_id>/<found_id>")
+def approve_match(lost_id, found_id):
+    if session.get("role") not in ["admin", "super_admin"]:
+        abort(403)
+        
+    db = get_db()
+    
+    # 1. Update Status
+    db.lost_items.update_one({"_id": ObjectId(lost_id)}, {"$set": {"status": "matched"}})
+    db.found_items.update_one({"_id": ObjectId(found_id)}, {"$set": {"status": "matched"}})
+    
+    # 2. Get User IDs
+    lost_item = db.lost_items.find_one({"_id": ObjectId(lost_id)})
+    found_item = db.found_items.find_one({"_id": ObjectId(found_id)})
+    
+    if lost_item and found_item:
+        # 3. Create Chat Room
+        chat_data = {
+            "lost_item_id": ObjectId(lost_id),
+            "found_item_id": ObjectId(found_id),
+            "lost_user_id": lost_item["user_id"],
+            "found_user_id": found_item["user_id"],
+            "item_name": lost_item["item_name"], # Common name
+            "status": "active",
+            "created_at": datetime.datetime.utcnow(),
+            "messages": [
+                {
+                    "sender": "system",
+                    "text": "Match approved! You can now chat to arrange the return.",
+                    "timestamp": datetime.datetime.utcnow()
+                }
+            ]
+        }
+        db.chats.insert_one(chat_data)
+        
+    flash("Match confirmed! Users have been notified.")
+    return redirect("/admin/dashboard")
+
+# ---------- CHAT SYSTEM ----------
+@app.route("/user/chats")
+def my_chats():
+    if session.get("role") != "user":
+        abort(403)
+        
+    db = get_db()
+    current_user_id = ObjectId(session["user_id"])
+    
+    # Find chats where user is either lost_user or found_user
+    chats = list(db.chats.find({
+        "$or": [
+            {"lost_user_id": current_user_id},
+            {"found_user_id": current_user_id}
+        ]
+    }).sort("created_at", -1))
+    
+    for chat in chats:
+        chat['id'] = str(chat['_id'])
+        # Determine role for display
+        if chat["lost_user_id"] == current_user_id:
+            chat["role_desc"] = "Reporter (Lost)"
+        else:
+            chat["role_desc"] = "Finder (Found)"
+            
+    return render_template("user_chats.html", chats=chats)
+
+@app.route("/user/chat/<chat_id>", methods=["GET", "POST"])
+def view_chat(chat_id):
+    if session.get("role") != "user":
+        abort(403)
+        
+    db = get_db()
+    chat = db.chats.find_one({"_id": ObjectId(chat_id)})
+    
+    if not chat:
+        return "Chat not found", 404
+        
+    # Verify Access
+    current_user_id = ObjectId(session["user_id"])
+    if current_user_id not in [chat["lost_user_id"], chat["found_user_id"]]:
+        abort(403)
+        
+    if request.method == "POST":
+        text = request.form.get("message")
+        if text:
+            msg = {
+                "sender_id": current_user_id,
+                "text": text,
+                "timestamp": datetime.datetime.utcnow()
+            }
+            db.chats.update_one(
+                {"_id": ObjectId(chat_id)},
+                {"$push": {"messages": msg}}
+            )
+            return redirect(f"/user/chat/{chat_id}")
+            
+    # Prepare messages for template
+    for msg in chat["messages"]:
+        if msg.get("sender") == "system":
+            msg["is_me"] = False
+            msg["is_system"] = True
+        else:
+            msg["is_system"] = False
+            msg["is_me"] = (msg["sender_id"] == current_user_id)
+            
+    return render_template("chat_room.html", chat=chat, current_user_id=current_user_id)
 @app.route("/logout")
 def logout():
     session.clear()
