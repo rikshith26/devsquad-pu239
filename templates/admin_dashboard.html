@@ -59,8 +59,9 @@
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 4rem;">
             <div
                 style="padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 2px solid #FFF7ED;">
-                <div
-                    style="width: 60px; height: 60px; border-radius: 50%; background: #FFF7ED; display: flex; align-items: center; justify-content: center;">
+                <div onclick="openModal('lostItemsModal')"
+                    style="width: 60px; height: 60px; border-radius: 50%; background: #FFF7ED; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;"
+                    onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                     <span class="material-icons" style="color: #F97316;">assignment</span>
                 </div>
                 <div>
@@ -71,8 +72,9 @@
 
             <div
                 style="padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 2px solid #F0FDF4;">
-                <div
-                    style="width: 60px; height: 60px; border-radius: 50%; background: #F0FDF4; display: flex; align-items: center; justify-content: center;">
+                <div onclick="openModal('foundItemsModal')"
+                    style="width: 60px; height: 60px; border-radius: 50%; background: #F0FDF4; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;"
+                    onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                     <span class="material-icons" style="color: #10B981;">check_circle</span>
                 </div>
                 <div>
@@ -83,8 +85,9 @@
 
             <div
                 style="padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 2px solid #FFFBEB;">
-                <div
-                    style="width: 60px; height: 60px; border-radius: 50%; background: #FFFBEB; display: flex; align-items: center; justify-content: center;">
+                <div onclick="document.getElementById('match-verification').scrollIntoView({behavior: 'smooth'})"
+                    style="width: 60px; height: 60px; border-radius: 50%; background: #FFFBEB; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;"
+                    onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                     <span class="material-icons" style="color: #F59E0B;">pending</span>
                 </div>
                 <div>
@@ -94,7 +97,7 @@
             </div>
         </div>
 
-        <h2 style="font-size: 1.75rem; margin-bottom: 1.5rem;">AI Match Verification</h2>
+        <h2 id="match-verification" style="font-size: 1.75rem; margin-bottom: 1.5rem;">AI Match Verification</h2>
 
         <div class="fade-in">
             <!-- Headers -->
@@ -151,6 +154,71 @@
             {% endfor %}
         </div>
     </main>
+
+    <!-- Lost Items Modal -->
+    <div id="lostItemsModal" class="modal-overlay" style="display: none;"
+        onclick="if(event.target === this) closeModal('lostItemsModal')">
+        <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+            <span onclick="closeModal('lostItemsModal')" class="close-btn">&times;</span>
+            <h2 style="margin-bottom: 1.5rem; color: var(--text-main);">All Lost Items</h2>
+
+            {% if lost_items %}
+            <div style="display: grid; gap: 1rem;">
+                {% for item in lost_items %}
+                <div
+                    style="display: flex; gap: 1rem; align-items: center; padding: 1rem; background: #F8FAFC; border-radius: 12px;">
+                    <img src="/{{ item.image_path }}"
+                        style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;">
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0; font-size: 1rem;">{{ item.item_name }}</h4>
+                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">{{ item.location }} • {{
+                            item.date }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); text-align: center;">No lost items reported.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Found Items Modal -->
+    <div id="foundItemsModal" class="modal-overlay" style="display: none;"
+        onclick="if(event.target === this) closeModal('foundItemsModal')">
+        <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
+            <span onclick="closeModal('foundItemsModal')" class="close-btn">&times;</span>
+            <h2 style="margin-bottom: 1.5rem; color: var(--text-main);">All Found Items</h2>
+
+            {% if found_items %}
+            <div style="display: grid; gap: 1rem;">
+                {% for item in found_items %}
+                <div
+                    style="display: flex; gap: 1rem; align-items: center; padding: 1rem; background: #F8FAFC; border-radius: 12px;">
+                    <img src="/{{ item.image_path }}"
+                        style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;">
+                    <div style="flex: 1;">
+                        <h4 style="margin: 0; font-size: 1rem;">{{ item.item_name }}</h4>
+                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">{{ item.location }} • {{
+                            item.date }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="color: var(--text-muted); text-align: center;">No found items reported.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+    </script>
     <script src="{{ url_for('static', filename='auth_check.js') }}"></script>
 </body>
 
