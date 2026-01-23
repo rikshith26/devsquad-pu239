@@ -125,11 +125,11 @@
                     <!-- Confidence Visualization -->
                     <div style="display: flex; gap: 1.5rem;">
                         <div class="confidence-ring"
-                            style="background: conic-gradient(#F59E0B {{ match.score.text_score }}%, #E2E8F0 0%); color: #F59E0B;">
+                            style="background: conic-gradient(#F59E0B {{ match.score.text_score }}%, #E2E8F0 {{ match.score.text_score }}%); color: #F59E0B;">
                             {{ match.score.text_score }}%
                         </div>
                         <div class="confidence-ring"
-                            style="background: conic-gradient(#10B981 {{ match.score.image_score }}%, #E2E8F0 0%); color: #10B981;">
+                            style="background: conic-gradient(#10B981 {{ match.score.image_score }}%, #E2E8F0 {{ match.score.image_score }}%); color: #10B981;">
                             {{ match.score.image_score }}%
                         </div>
                     </div>
