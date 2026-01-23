@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin - Lost & Found AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="flex-center" style="min-height: 100vh;">
+
+    <!-- Abstract Background Blob -->
+    <div class="blob blob-1"
+        style="width: 520px; height: 520px; opacity: 0.12; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    </div>
+
+    <div style="text-align: center; position: relative; z-index: 10; max-width: 900px; width: 100%;">
+
+        <!-- Icon -->
+        <div style="width: 100px; height: 100px; background: white; border-radius: 30px;
+                   display: flex; align-items: center; justify-content: center;
+                   margin: 0 auto 2rem; box-shadow: var(--shadow-soft);">
+            <span class="material-icons text-gradient" style="font-size: 48px;">
+                admin_panel_settings
+            </span>
+        </div>
+
+        <!-- Title -->
+        <h1 style="font-size: 3rem; margin-bottom: 0.5rem; color: var(--text-main);">
+            Super Admin
+        </h1>
+        <p style="color: var(--text-muted); margin-bottom: 3rem; font-size: 1.2rem;">
+            System Owner & Operational Control
+        </p>
+
+        <!-- ===== SYSTEM LEVEL ACTIONS ===== -->
+        <h2 style="margin-bottom: 1rem; color: var(--text-main);">
+            System Controls
+        </h2>
+
+        <div style="display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 3rem;">
+            <a href="/superadmin/create-admin" class="btn btn-primary">
+                <span class="material-icons" style="margin-right: 0.5rem;">person_add</span>
+                Create Admin
+            </a>
+        </div>
+
+        <!-- Divider -->
+        <div style="height: 1px; background: var(--border-light); margin: 2.5rem 0;"></div>
+
+        <!-- ===== OPERATIONAL (ADMIN) ACTIONS ===== -->
+        <h2 style="margin-bottom: 1rem; color: var(--text-main);">
+            Operational Controls
+        </h2>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">
+            Access admin-level operations and AI match approvals
+        </p>
+
+        <div style="display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;">
+            <a href="/admin/dashboard" class="btn btn-secondary">
+                <span class="material-icons" style="margin-right: 0.5rem;">psychology</span>
+                View AI Matches
+            </a>
+
+            <a href="/superadmin/profile" class="btn btn-secondary">
+                <span class="material-icons" style="margin-right: 0.5rem;">account_circle</span>
+                My Profile
+            </a>
+
+            <a href="/logout" class="btn btn-secondary">
+                <span class="material-icons" style="margin-right: 0.5rem;">logout</span>
+                Logout
+            </a>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

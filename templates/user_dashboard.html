@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Lost & Found AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="dashboard-container">
+    <nav class="sidebar">
+        <div
+            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; color: var(--text-main);">
+            <span class="material-icons text-gradient" style="font-size: 28px;">search</span>
+            Lost & Found
+        </div>
+
+        <a href="/user/dashboard" class="nav-link active">
+            <span class="material-icons">dashboard</span>
+            Dashboard
+        </a>
+        <a href="/user/report-lost" class="nav-link">
+            <span class="material-icons">search_off</span>
+            Report Lost
+        </a>
+        <a href="/user/report-found" class="nav-link">
+            <span class="material-icons">travel_explore</span>
+            Report Found
+        </a>
+        <a href="/user/history" class="nav-link">
+            <span class="material-icons">history</span>
+            History
+        </a>
+
+        <div style="margin-top: auto;">
+            <a href="/logout" class="nav-link" style="color: var(--accent-red);">
+                <span class="material-icons" style="color: var(--accent-red);">logout</span>
+                Logout
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-main);">
+                    Hello, {{ user.name }}!
+                </h1>
+                <p style="color: var(--text-muted); font-size: 1.1rem;">
+                    Here's to finding what matters most.
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <div
+                    style="width: 48px; height: 48px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft);">
+                    <span class="material-icons" style="color: var(--text-muted);">notifications</span>
+                </div>
+
+                <!-- USER AVATAR -->
+                <a href="/user/profile" title="View Profile">
+                    {% if user.profile_photo %}
+                    <img src="/{{ user.profile_photo }}"
+                        style="width:48px;height:48px;border-radius:50%;object-fit:cover;box-shadow:var(--shadow-soft);">
+                    {% else %}
+                    <div style="width:48px;height:48px;border-radius:50%;
+                                   background: var(--primary-gradient);
+                                   display:flex;align-items:center;justify-content:center;
+                                   color:white;font-weight:700;
+                                   box-shadow: 0 5px 15px rgba(246, 173, 85, 0.4);">
+                        {{ user.name[0] }}
+                    </div>
+                    {% endif %}
+                </a>
+            </div>
+        </header>
+
+        <section
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin-bottom: 4rem;">
+
+            <!-- Lost Card -->
+            <div class="fade-in"
+                style="animation-delay: 0.1s; padding: 2rem; border-radius: 24px; border: 2px dashed #FED7AA; transition: all 0.3s ease; background: rgba(255, 255, 255, 0.4);">
+                <div
+                    style="width: 64px; height: 64px; border-radius: 20px; background: #FFF7ED; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                    <span class="material-icons" style="font-size: 32px; color: #F97316;">search_off</span>
+                </div>
+                <h3>I lost something</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Upload a photo or describe your item.</p>
+                <a href="/user/report-lost" class="btn btn-primary" style="box-shadow: none;">Start Search</a>
+            </div>
+
+            <!-- Found Card -->
+            <div class="fade-in"
+                style="animation-delay: 0.2s; padding: 2rem; border-radius: 24px; border: 2px dashed #A78BFA; transition: all 0.3s ease; background: rgba(255, 255, 255, 0.4);">
+                <div
+                    style="width: 64px; height: 64px; border-radius: 20px; background: #F5F3FF; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                    <span class="material-icons" style="font-size: 32px; color: #8B5CF6;">travel_explore</span>
+                </div>
+                <h3>I found something</h3>
+                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Help someone by reporting a found item.</p>
+                <a href="/user/report-found" class="btn btn-secondary"
+                    style="border: none; background: #8B5CF6; color: white;">Report Found</a>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>

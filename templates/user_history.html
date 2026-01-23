@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My History - Lost & Found AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="dashboard-container">
+    <nav class="sidebar">
+        <div
+            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; color: var(--text-main);">
+            <span class="material-icons text-gradient" style="font-size: 28px;">search</span>
+            Lost & Found
+        </div>
+        <a href="/user/dashboard" class="nav-link">
+            <span class="material-icons">dashboard</span>
+            Dashboard
+        </a>
+        <a href="/user/report-lost" class="nav-link">
+            <span class="material-icons">search_off</span>
+            Report Lost
+        </a>
+        <a href="/user/report-found" class="nav-link">
+            <span class="material-icons">travel_explore</span>
+            Report Found
+        </a>
+        <a href="/user/history" class="nav-link active">
+            <span class="material-icons">history</span>
+            History
+        </a>
+        <div style="margin-top: auto;">
+            <a href="/logout" class="nav-link" style="color: var(--accent-red);">
+                <span class="material-icons" style="color: var(--accent-red);">logout</span>
+                Logout
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-main);">
+                    My History
+                </h1>
+                <p style="color: var(--text-muted); font-size: 1.1rem;">
+                    Track your reported items and status.
+                </p>
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <div style="margin-top: 1rem; color: #10B981; font-weight: 500;">
+                    {{ messages[0] }}
+                </div>
+                {% endif %}
+                {% endwith %}
+            </div>
+
+            <a href="/user/dashboard" class="btn btn-secondary">
+                <span class="material-icons" style="margin-right: 0.5rem;">arrow_back</span>
+                Back to Dashboard
+            </a>
+        </header>
+
+        <!-- History Section -->
+        <div class="history-split-view">
+
+            <!-- LOST ITEMS -->
+            <div>
+                <h3
+                    style="margin-bottom: 1rem; color: var(--text-muted); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="material-icons" style="color: #F97316; font-size: 20px;">search_off</span>
+                    Reported Lost
+                </h3>
+
+                {% if lost_items %}
+                <div class="history-grid">
+                    {% for item in lost_items %}
+                    <div class="history-card" style="position: relative;">
+                        <!-- Match Badge -->
+                        {% if item.has_match and item.status == 'lost' %}
+                        <div
+                            style="position: absolute; top: -8px; right: -8px; background: #2DD4BF; color: white; border-radius: 99px; padding: 0.25rem 0.75rem; font-size: 0.75rem; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            Potential Match
+                        </div>
+                        {% endif %}
+
+                        <img src="/{{ item.image_path }}"
+                            style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0; font-size: 1rem;">{{ item.item_name }}</h4>
+                            <p style="margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.85rem;">
+                                {{ item.location }} • {{ item.date }}
+                            </p>
+                            <span class="history-status lost" style="margin-top:0.5rem; display:inline-block;">
+                                {{ item.status|title }}
+                            </span>
+                        </div>
+
+                        <!-- Actions -->
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button
+                                onclick="openViewModal('{{ item.image_path }}', '{{ item.item_name }}', '{{ item.description|replace('\n', ' ')|replace('\'', '\\\'') }}', '{{ item.location }}', '{{ item.date }}')"
+                                class="btn-icon" title="View Details">
+                                <span class="material-icons">visibility</span>
+                            </button>
+
+                            {% if item.status == 'lost' %}
+                            <a href="/user/item/resolve/lost/{{ item.id }}" class="btn-icon text-success"
+                                title="Mark Found" onclick="return confirm('Found this item? Mark as resolved?')">
+                                <span class="material-icons">check_circle</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color: var(--text-muted); font-style: italic;">No lost items reported.</p>
+                {% endif %}
+            </div>
+
+            <!-- FOUND ITEMS -->
+            <div>
+                <h3
+                    style="margin-bottom: 1rem; color: var(--text-muted); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span class="material-icons" style="color: #8B5CF6; font-size: 20px;">travel_explore</span>
+                    Reported Found
+                </h3>
+
+                {% if found_items %}
+                <div class="history-grid">
+                    {% for item in found_items %}
+                    <div class="history-card" style="position: relative;">
+                        <!-- Match Badge -->
+                        {% if item.has_match and item.status == 'found' %}
+                        <div
+                            style="position: absolute; top: -8px; right: -8px; background: #2DD4BF; color: white; border-radius: 99px; padding: 0.25rem 0.75rem; font-size: 0.75rem; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                            Potential Match
+                        </div>
+                        {% endif %}
+
+                        <img src="/{{ item.image_path }}"
+                            style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0; font-size: 1rem;">{{ item.item_name }}</h4>
+                            <p style="margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.85rem;">
+                                {{ item.location }} • {{ item.date }}
+                            </p>
+                            <span class="history-status found" style="margin-top:0.5rem; display:inline-block;">
+                                {{ item.status|title }}
+                            </span>
+                        </div>
+
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button
+                                onclick="openViewModal('{{ item.image_path }}', '{{ item.item_name }}', '{{ item.description|replace('\n', ' ')|replace('\'', '\\\'') }}', '{{ item.location }}', '{{ item.date }}')"
+                                class="btn-icon" title="View Details">
+                                <span class="material-icons">visibility</span>
+                            </button>
+
+                            {% if item.status == 'found' %}
+                            <a href="/user/item/resolve/found/{{ item.id }}" class="btn-icon text-success"
+                                title="Mark Reviewed" onclick="return confirm('Mark this as resolved?')">
+                                <span class="material-icons">check_circle</span>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color: var(--text-muted); font-style: italic;">No found items reported.</p>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+    <!-- VIEW MODAL -->
+    <div id="viewModal" class="modal-overlay" style="display: none;"
+        onclick="if(event.target === this) closeViewModal()">
+        <div class="modal-content">
+            <span onclick="closeViewModal()" class="close-btn">&times;</span>
+            <img id="viewImage" src=""
+                style="width: 100%; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 1.5rem;">
+            <h2 id="viewTitle" style="margin-bottom: 0.5rem;"></h2>
+            <p id="viewMeta" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;"></p>
+            <p id="viewDesc" style="line-height: 1.6; color: var(--text-main);"></p>
+        </div>
+    </div>
+
+    <script>
+        // VIEW MODAL
+        function openViewModal(img, title, desc, loc, date) {
+            document.getElementById('viewImage').src = '/' + img;
+            document.getElementById('viewTitle').textContent = title;
+            document.getElementById('viewMeta').textContent = `${loc} • ${date}`;
+            document.getElementById('viewDesc').textContent = desc;
+            document.getElementById('viewModal').style.display = 'flex';
+        }
+
+        function closeViewModal() {
+            document.getElementById('viewModal').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

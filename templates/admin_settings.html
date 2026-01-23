@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Admin Panel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="dashboard-container">
+    <nav class="sidebar">
+        <div
+            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; color: var(--text-main);">
+            <span class="material-icons text-gradient" style="font-size: 28px;">admin_panel_settings</span>
+            Admin Panel
+        </div>
+
+        <a href="/admin/dashboard" class="nav-link">
+            <span class="material-icons">dashboard</span>
+            Overview
+        </a>
+        <a href="/admin/users" class="nav-link">
+            <span class="material-icons">people</span>
+            Users
+        </a>
+        <a href="/admin/settings" class="nav-link active">
+            <span class="material-icons">settings</span>
+            Settings
+        </a>
+        <a href="/admin/profile" class="nav-link">
+            <span class="material-icons">account_circle</span>
+            Profile
+        </a>
+
+        <div style="margin-top: auto;">
+            <a href="/logout" class="nav-link" style="color: var(--accent-red);">
+                <span class="material-icons" style="color: var(--accent-red);">logout</span>
+                Logout
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header style="margin-bottom: 3rem;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-main);">Settings</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem;">Manage your account and system preferences.</p>
+        </header>
+
+        <div class="fade-in" style="display: grid; gap: 2rem;">
+            <!-- Account Settings -->
+            <div style="background: white; padding: 2rem; border-radius: 16px; border: 1px solid #E2E8F0;">
+                <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                    <span class="material-icons" style="color: #4F46E5;">manage_accounts</span>
+                    Account Settings
+                </h3>
+                <form onsubmit="event.preventDefault(); alert('Password change simulated.');">
+                    <div style="margin-bottom: 1.5rem;">
+                        <label
+                            style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-main);">Current
+                            Password</label>
+                        <input type="password" class="form-control" placeholder="Enter current password"
+                            style="width: 100%; max-width: 400px;">
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label
+                            style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-main);">New
+                            Password</label>
+                        <input type="password" class="form-control" placeholder="Enter new password"
+                            style="width: 100%; max-width: 400px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </form>
+            </div>
+
+            <!-- System Settings (Placeholder) -->
+            <div
+                style="background: white; padding: 2rem; border-radius: 16px; border: 1px solid #E2E8F0; opacity: 0.7;">
+                <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                    <span class="material-icons" style="color: #64748B;">tune</span>
+                    System Preferences
+                </h3>
+                <p style="color: var(--text-muted);">More settings coming soon...</p>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

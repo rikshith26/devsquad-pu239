@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Users - Admin Panel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="dashboard-container">
+    <nav class="sidebar">
+        <div
+            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; color: var(--text-main);">
+            <span class="material-icons text-gradient" style="font-size: 28px;">admin_panel_settings</span>
+            Admin Panel
+        </div>
+
+        <a href="/admin/dashboard" class="nav-link">
+            <span class="material-icons">dashboard</span>
+            Overview
+        </a>
+        <a href="/admin/users" class="nav-link active">
+            <span class="material-icons">people</span>
+            Users
+        </a>
+        <a href="/admin/settings" class="nav-link">
+            <span class="material-icons">settings</span>
+            Settings
+        </a>
+        <a href="/admin/profile" class="nav-link">
+            <span class="material-icons">account_circle</span>
+            Profile
+        </a>
+
+        <div style="margin-top: auto;">
+            <a href="/logout" class="nav-link" style="color: var(--accent-red);">
+                <span class="material-icons" style="color: var(--accent-red);">logout</span>
+                Logout
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-main);">Manage Users</h1>
+                <p style="color: var(--text-muted); font-size: 1.1rem;">View and manage registered users.</p>
+            </div>
+            <button class="btn btn-secondary" onclick="window.location.reload()">
+                <span class="material-icons" style="margin-right: 0.5rem;">refresh</span>
+                Refresh
+            </button>
+        </header>
+
+        <div class="fade-in">
+            <div class="table-container"
+                style="background: white; border-radius: 16px; padding: 1.5rem; border: 1px solid #E2E8F0;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #F1F5F9; text-align: left;">
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">ID</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">Name</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">Email</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">Role</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">Status</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">Profile</th>
+                            <th style="padding: 1rem; color: var(--text-muted); font-weight: 600;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr style="border-bottom: 1px solid #F1F5F9;">
+                            <td style="padding: 1rem; color: var(--text-main);">#{{ u.user_id }}</td>
+                            <td style="padding: 1rem; font-weight: 500;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <div
+                                        style="width: 32px; height: 32px; background: #EEF2FF; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #4F46E5; font-weight: bold; font-size: 0.9rem;">
+                                        {{ u.name[0] | upper }}
+                                    </div>
+                                    {{ u.name }}
+                                </div>
+                            </td>
+                            <td style="padding: 1rem; color: var(--text-muted);">{{ u.email }}</td>
+                            <td style="padding: 1rem;">
+                                <span
+                                    style="background: #F1F5F9; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.85rem; color: var(--text-muted);">
+                                    {{ u.role }}
+                                </span>
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% if u.is_active %}
+                                <span
+                                    style="color: #10B981; background: #ECFDF5; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.85rem; font-weight: 500;">Active</span>
+                                {% else %}
+                                <span
+                                    style="color: #EF4444; background: #FEF2F2; padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.85rem; font-weight: 500;">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% if u.profile_completed %}
+                                <span class="material-icons"
+                                    style="color: #10B981; font-size: 20px;">check_circle</span>
+                                {% else %}
+                                <span class="material-icons"
+                                    style="color: #CBD5E1; font-size: 20px;">radio_button_unchecked</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% if session['role'] == 'super_admin' or (session['role'] == 'admin' and u.role !=
+                                'super_admin') %}
+                                {% if u.is_active %}
+                                <a href="/admin/user/deactivate/{{ u.user_id }}"
+                                    style="color: #EF4444; text-decoration: none; font-weight: 500; font-size: 0.9rem; display: flex; align-items: center; gap: 0.25rem;">
+                                    Deactivate
+                                </a>
+                                {% else %}
+                                <a href="/admin/user/activate/{{ u.user_id }}"
+                                    style="color: #10B981; text-decoration: none; font-weight: 500; font-size: 0.9rem; display: flex; align-items: center; gap: 0.25rem;">
+                                    Activate
+                                </a>
+                                {% endif %}
+                                {% else %}
+                                <span style="color: #94A3B8; font-size: 0.85rem; font-style: italic;">Protected</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

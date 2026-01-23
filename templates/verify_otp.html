@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP - Lost & Found AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="flex-center" style="min-height: 100vh;">
+    <!-- Background Blobs -->
+    <div class="blob blob-1" style="width: 300px; height: 300px; top: -50px; right: -50px; opacity: 0.3;"></div>
+    <div class="blob blob-2"
+        style="width: 300px; height: 300px; bottom: -50px; left: -50px; opacity: 0.3; background: #99F6E4;"></div>
+
+    <div class="card fade-in" style="width: 100%; max-width: 450px; position: relative; z-index: 10; padding: 3rem;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div
+                style="width: 70px; height: 70px; background: #F0FDF4; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; color: #10B981;">
+                <span class="material-icons" style="font-size: 32px;">verified_user</span>
+            </div>
+            <h1 style="font-size: 1.75rem; margin-bottom: 0.5rem; color: var(--text-main);">Verify Identity</h1>
+            <p style="color: var(--text-muted);">Enter the OTP sent to your email to securely access your recovered
+                item.</p>
+        </div>
+
+        <form method="POST">
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <input type="text" name="otp" class="form-input" placeholder="0 0 0 0 0 0"
+                    style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem; font-weight: 600;" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                Verify OTP
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="/login" style="color: var(--text-muted); font-size: 0.9rem; font-weight: 500;">
+                <span class="material-icons" style="font-size: 14px; vertical-align: middle;">arrow_back</span>
+                Back to Login
+            </a>
+        </div>
+    </div>
+</body>
+
+</html>

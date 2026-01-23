@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Lost & Found AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="split-layout">
+    <div class="split-left fade-in">
+        <div style="margin-bottom: auto;">
+            <div
+                style="display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.5rem; color: var(--text-main);">
+                <span class="material-icons text-gradient" style="font-size: 32px;">search</span>
+                Lost & Found AI
+            </div>
+        </div>
+
+        <div style="max-width: 400px; width: 100%;">
+            <h1 class="text-gradient" style="font-size: 3rem; line-height: 1.2; margin-bottom: 0.5rem;">
+                Join Us
+            </h1>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1.1rem;">
+                Create your account in seconds. You’ll complete your profile after login to unlock reporting features.
+            </p>
+
+            <!-- INFO NOTE -->
+            <div
+                style="background: #FFF7ED; border: 1px solid #FED7AA; color: #9A3412;
+                       padding: 1rem 1.25rem; border-radius: 14px;
+                       margin-bottom: 2rem; font-size: 0.95rem;">
+                <strong>Note:</strong> Profile completion is required before reporting lost or found items.
+            </div>
+
+            <form method="POST">
+                <div class="form-group">
+                    <label style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">
+                        Full Name
+                    </label>
+                    <input type="text" name="name" class="form-input" placeholder="John Doe" required>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">
+                        Email Address
+                    </label>
+                    <input type="email" name="email" class="form-input" placeholder="name@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">
+                        Password
+                    </label>
+                    <input type="password" name="password" class="form-input" placeholder="Create a password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    Create Account
+                </button>
+            </form>
+
+            <div style="margin-top: 2.5rem; text-align: center; color: var(--text-muted);">
+                Already have an account?
+                <a href="/" style="color: #F6AD55; font-weight: 600;">Sign in</a>
+            </div>
+        </div>
+
+        <div style="margin-top: auto; color: var(--text-muted); font-size: 0.875rem;">
+            &copy; 2024 Lost & Found AI
+        </div>
+    </div>
+
+    <div class="split-right">
+        <div class="blob blob-1" style="background: #A78BFA; right: auto; left: -10%;"></div>
+        <div class="blob blob-2" style="background: #F6AD55; left: auto; right: -10%;"></div>
+
+        <div class="floating" style="position: relative; z-index: 2; text-align: center; padding: 2rem;">
+            <div
+                style="width: 140px; height: 140px; background: rgba(255,255,255,0.4);
+                       backdrop-filter: blur(20px); border-radius: 40px;
+                       display: flex; align-items: center; justify-content: center;
+                       margin: 0 auto 2.5rem;
+                       box-shadow: 0 20px 40px rgba(0,0,0,0.05);">
+                <span class="material-icons text-gradient" style="font-size: 72px;">
+                    diversity_1
+                </span>
+            </div>
+
+            <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem; color: #2D3748;">
+                Community First
+            </h2>
+            <p style="color: #556; max-width: 450px; font-size: 1.1rem; line-height: 1.8;">
+                Together, we help people recover what matters most by building trust and accountability.
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

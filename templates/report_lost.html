@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Lost Item</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head>
+
+<body class="dashboard-container">
+    <nav class="sidebar">
+        <div
+            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; color: var(--text-main);">
+            <span class="material-icons text-gradient" style="font-size: 28px;">search</span>
+            Lost & Found
+        </div>
+
+        <a href="/user/dashboard" class="nav-link">
+            <span class="material-icons">dashboard</span>
+            Dashboard
+        </a>
+        <a href="/user/report-lost" class="nav-link active">
+            <span class="material-icons">search_off</span>
+            Report Lost
+        </a>
+        <a href="/user/report-found" class="nav-link">
+            <span class="material-icons">travel_explore</span>
+            Report Found
+        </a>
+
+        <div style="margin-top: auto;">
+            <a href="/logout" class="nav-link" style="color: var(--accent-red);">
+                <span class="material-icons" style="color: var(--accent-red);">logout</span>
+                Logout
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <header style="margin-bottom: 3rem;">
+            <a href="/user/dashboard"
+                style="display: inline-flex; align-items: center; gap: 0.5rem; color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">
+                <span class="material-icons" style="font-size: 16px;">arrow_back</span>
+                Back to Dashboard
+            </a>
+            <h1 class="text-gradient" style="font-size: 2.5rem; display: inline-block;">Report a Lost Item</h1>
+            <p style="color: var(--text-muted); margin-top: 0.5rem;">Provide details to help our AI find potential
+                matches.</p>
+        </header>
+
+        <form method="POST" enctype="multipart/form-data" id="reportForm"
+            style="max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; gap: 3rem;">
+            <!-- Upload Column -->
+            <div>
+                <label style="display: block; color: var(--text-main); margin-bottom: 1rem; font-weight: 600;">Item
+                    Images (Max 5)</label>
+                <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                    <input type="file" id="file-input" name="image" accept=".jpg,.jpeg,.png" multiple required
+                        style="display: none;">
+                    <div id="upload-placeholder">
+                        <div
+                            style="width: 80px; height: 80px; background: #FFF7ED; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+                            <span class="material-icons" style="font-size: 32px; color: #F97316;">add_a_photo</span>
+                        </div>
+                        <p style="color: var(--text-main); font-weight: 500; margin-bottom: 0.5rem;">Click to upload
+                            images</p>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">JPG, PNG (Max 50MB Total)</p>
+                    </div>
+                    <div id="preview-container" style="display: none; margin-top: 1rem;">
+                        <p id="file-count"
+                            style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.5rem;">
+                        </p>
+                        <div id="image-previews"
+                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 0.5rem;">
+                        </div>
+                    </div>
+                </div>
+                <p id="upload-error" style="color: #EF4444; font-size: 0.85rem; margin-top: 0.5rem; display: none;"></p>
+            </div>
+
+            <!-- Form Column -->
+            <div>
+                <div class="form-group">
+                    <label
+                        style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">What
+                        was lost?</label>
+                    <input type="text" name="item_name" class="form-input" placeholder="e.g. Leather Wallet" required>
+                </div>
+
+                <div class="form-group">
+                    <label
+                        style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">Description</label>
+                    <textarea name="description" class="form-input" rows="4"
+                        placeholder="Distinct markers, color, brand..." style="resize: vertical; min-height: 120px;"
+                        required minlength="10"></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label
+                            style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">Location</label>
+                        <input type="text" name="location" class="form-input" placeholder="City/Spot" required>
+                    </div>
+                    <div class="form-group">
+                        <label
+                            style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">Date
+                            Lost</label>
+                        <input type="date" name="date" class="form-input" required>
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    Submit Report
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('file-input');
+            const dropZone = document.getElementById('drop-zone');
+            const previewContainer = document.getElementById('preview-container');
+            const previewGrid = document.getElementById('image-previews');
+            const fileCountText = document.getElementById('file-count');
+            const errorText = document.getElementById('upload-error');
+            const submitBtn = document.getElementById('submit-btn');
+            const placeholder = document.getElementById('upload-placeholder');
+
+            // DataTransfer object to hold files
+            const dt = new DataTransfer();
+
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            // Highlight drop zone
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                dropZone.style.borderColor = '#F6AD55';
+                dropZone.style.backgroundColor = '#FFFBF5';
+            }
+
+            function unhighlight(e) {
+                dropZone.style.borderColor = '#E2E8F0';
+                dropZone.style.backgroundColor = 'white';
+            }
+
+            // Handle dropped files
+            dropZone.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dtFiles = e.dataTransfer.files;
+                handleFiles(dtFiles);
+            }
+
+            // Handle selected files
+            fileInput.addEventListener('change', function () {
+                handleFiles(this.files);
+            });
+
+            function handleFiles(files) {
+                errorText.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+
+                const newFiles = Array.from(files);
+
+                newFiles.forEach(file => {
+                    if (file.type.match('image.*')) {
+                        let isDuplicate = false;
+                        for (let i = 0; i < dt.files.length; i++) {
+                            if (dt.files[i].name === file.name && dt.files[i].size === file.size) {
+                                isDuplicate = true;
+                                break;
+                            }
+                        }
+
+                        if (!isDuplicate) {
+                            if (dt.items.length < 5) {
+                                dt.items.add(file);
+                            } else {
+                                showError("Maximum 5 images allowed.");
+                            }
+                        }
+                    } else {
+                        // Optional warning for non-images
+                    }
+                });
+
+                updateFileInput();
+            }
+
+            function updateFileInput() {
+                fileInput.files = dt.files;
+                updatePreviews();
+
+                if (dt.files.length === 0) {
+                    previewContainer.style.display = 'none';
+                    placeholder.style.display = 'block';
+                } else {
+                    previewContainer.style.display = 'block';
+                    placeholder.style.display = 'none';
+                }
+            }
+
+            function updatePreviews() {
+                previewGrid.innerHTML = '';
+                fileCountText.textContent = `${dt.files.length} / 5 images selected`;
+
+                Array.from(dt.files).forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = function () {
+                        const div = document.createElement('div');
+                        div.style.position = 'relative';
+                        div.style.height = '60px';
+
+                        const img = document.createElement('img');
+                        img.src = reader.result;
+                        img.style.width = '100%';
+                        img.style.height = '100%';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '8px';
+
+                        const removeBtn = document.createElement('button');
+                        removeBtn.innerHTML = '×';
+                        removeBtn.style.position = 'absolute';
+                        removeBtn.style.top = '-5px';
+                        removeBtn.style.right = '-5px';
+                        removeBtn.style.background = '#EF4444';
+                        removeBtn.style.color = 'white';
+                        removeBtn.style.border = 'none';
+                        removeBtn.style.borderRadius = '50%';
+                        removeBtn.style.width = '18px';
+                        removeBtn.style.height = '18px';
+                        removeBtn.style.cursor = 'pointer';
+                        removeBtn.style.display = 'flex';
+                        removeBtn.style.alignItems = 'center';
+                        removeBtn.style.justifyContent = 'center';
+                        removeBtn.style.fontSize = '12px';
+                        removeBtn.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.removeFile(index);
+                        };
+
+                        div.appendChild(img);
+                        div.appendChild(removeBtn);
+                        previewGrid.appendChild(div);
+                    }
+                });
+            }
+
+            window.removeFile = function (index) {
+                dt.items.remove(index);
+                updateFileInput();
+            }
+
+            function showError(msg) {
+                errorText.textContent = msg;
+                errorText.style.display = 'block';
+            }
+
+            // Form Submission Validation
+            document.getElementById('reportForm').onsubmit = function (e) {
+                if (dt.files.length < 1) {
+                    e.preventDefault();
+                    showError("At least 1 image is required.");
+                    return false;
+                }
+                if (dt.files.length > 5) {
+                    e.preventDefault();
+                    showError("Maximum 5 images allowed.");
+                    return false;
+                }
+            };
+        });
+    </script>
+</body>
+
+</html>
