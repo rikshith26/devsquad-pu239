@@ -102,9 +102,10 @@
 
                         <!-- Actions -->
                         <div style="display: flex; gap: 0.5rem;">
-                            <button
-                                onclick="openViewModal('{{ item.image_path }}', '{{ item.item_name }}', '{{ item.description|replace('\n', ' ')|replace('\'', '\\\'') }}', '{{ item.location }}', '{{ item.date }}')"
-                                class="btn-icon" title="View Details">
+                            <button type="button" data-img="{{ item.image_path }}" data-title="{{ item.item_name }}"
+                                data-desc="{{ item.description }}" data-loc="{{ item.location }}"
+                                data-date="{{ item.date }}" onclick="openViewModal(this)" class="btn-icon"
+                                title="View Details">
                                 <span class="material-icons">visibility</span>
                             </button>
 
@@ -157,9 +158,10 @@
                         </div>
 
                         <div style="display: flex; gap: 0.5rem;">
-                            <button
-                                onclick="openViewModal('{{ item.image_path }}', '{{ item.item_name }}', '{{ item.description|replace('\n', ' ')|replace('\'', '\\\'') }}', '{{ item.location }}', '{{ item.date }}')"
-                                class="btn-icon" title="View Details">
+                            <button type="button" data-img="{{ item.image_path }}" data-title="{{ item.item_name }}"
+                                data-desc="{{ item.description }}" data-loc="{{ item.location }}"
+                                data-date="{{ item.date }}" onclick="openViewModal(this)" class="btn-icon"
+                                title="View Details">
                                 <span class="material-icons">visibility</span>
                             </button>
 
@@ -195,11 +197,11 @@
 
     <script>
         // VIEW MODAL
-        function openViewModal(img, title, desc, loc, date) {
-            document.getElementById('viewImage').src = '/' + img;
-            document.getElementById('viewTitle').textContent = title;
-            document.getElementById('viewMeta').textContent = `${loc} • ${date}`;
-            document.getElementById('viewDesc').textContent = desc;
+        function openViewModal(btn) {
+            document.getElementById('viewImage').src = '/' + btn.dataset.img;
+            document.getElementById('viewTitle').textContent = btn.dataset.title;
+            document.getElementById('viewMeta').textContent = `${btn.dataset.loc} • ${btn.dataset.date}`;
+            document.getElementById('viewDesc').textContent = btn.dataset.desc;
             document.getElementById('viewModal').style.display = 'flex';
         }
 
