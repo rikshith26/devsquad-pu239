@@ -4,18 +4,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Lost & Found AI</title>
+    <title>Login - Foundify</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* Login Specific Compact Styles */
+        body,
+        .split-layout {
+            height: 100vh !important;
+            overflow: hidden !important;
+        }
+
+        .split-left {
+            padding: 3rem !important;
+            /* Reduced from 5rem */
+            justify-content: center;
+        }
+
+        h1 {
+            font-size: 2.5rem !important;
+            margin-bottom: 0.25rem !important;
+        }
+
+        p {
+            margin-bottom: 1.5rem !important;
+        }
+
+        .form-group {
+            margin-bottom: 1rem !important;
+        }
+
+        .form-input {
+            padding: 0.875rem 1rem !important;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem !important;
+        }
+
+        /* Logo Adjustment */
+        .split-left>div:first-child img {
+            height: 36px !important;
+        }
+
+        .split-left>div:first-child {
+            font-size: 1.5rem !important;
+            margin-bottom: 1rem !important;
+        }
+    </style>
 </head>
 
 <body class="split-layout">
     <div class="split-left fade-in">
         <div style="margin-bottom: auto;">
             <div
-                style="display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.5rem; color: var(--text-main);">
-                <span class="material-icons text-gradient" style="font-size: 32px;">search</span>
-                Lost & Found AI
+                style="display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 2rem; color: var(--text-main);">
+                <img src="/uploads/foundify_logo.png" alt="Foundify Logo" style="height: 48px; width: auto;">
+                Foundify
             </div>
         </div>
 
@@ -26,6 +71,18 @@
             <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1.1rem;">
                 Sign in to continue your search or help others.
             </p>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+            <div
+                style="background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                {% for message in messages %}
+                <p style="margin: 0;">{{ message }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
 
             <form method="POST">
                 <div class="form-group">
@@ -45,6 +102,20 @@
                 <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
                     Sign In
                 </button>
+
+                <div style="text-align: center; margin: 1.5rem 0; position: relative;">
+                    <span
+                        style="background: white; padding: 0 10px; color: var(--text-muted); position: relative; z-index: 1;">OR</span>
+                    <div
+                        style="height: 1px; background: #E2E8F0; position: absolute; top: 50%; left: 0; right: 0; z-index: 0;">
+                    </div>
+                </div>
+
+                <a href="/google-login" class="btn"
+                    style="width: 100%; border: 1px solid #E2E8F0; background: white; color: var(--text-main); display: flex; align-items: center; justify-content: center; gap: 0.75rem; font-weight: 500;">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" style="width: 20px; height: 20px;">
+                    Continue with Google
+                </a>
             </form>
 
             <div style="margin-top: 2.5rem; text-align: center; color: var(--text-muted);">
@@ -54,33 +125,31 @@
         </div>
 
         <div style="margin-top: auto; color: var(--text-muted); font-size: 0.875rem;">
-            &copy; 2024 Lost & Found AI
+            &copy; 2024 Foundify
         </div>
     </div>
 
-    <div class="split-right">
-        <div class="blob blob-1" style="background: #A78BFA; right: auto; left: -10%;"></div>
-        <div class="blob blob-2" style="background: #F6AD55; left: auto; right: -10%;"></div>
+    <div class="split-right"
+        style="background: linear-gradient(135deg, #FDFBF7 0%, #FFF7ED 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+        <!-- Background Elements -->
+        <div
+            style="position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(167,139,250,0.1) 0%, rgba(255,255,255,0) 70%); top: 50%; left: 50%; transform: translate(-50%, -50%);">
+        </div>
 
-        <div class="floating" style="position: relative; z-index: 2; text-align: center; padding: 2rem;">
-            <div style="width: 140px; height: 140px; background: rgba(255,255,255,0.4);
-                       backdrop-filter: blur(20px); border-radius: 40px;
-                       display: flex; align-items: center; justify-content: center;
-                       margin: 0 auto 2.5rem;
-                       box-shadow: 0 20px 40px rgba(0,0,0,0.05);">
-                <span class="material-icons text-gradient" style="font-size: 72px;">
-                    lock_open
-                </span>
-            </div>
+        <!-- Illustration -->
+        <div class="fade-in" style="position: relative; z-index: 2; text-align: center; padding: 2rem;">
+            <img src="/uploads/login_illustration_1769211144787.png" alt="Foundify Secure Search"
+                style="max-width: 100%; height: auto; max-height: 500px; filter: drop-shadow(0 20px 40px rgba(167,139,250,0.15)); transition: transform 0.5s ease;">
 
-            <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem; color: #2D3748;">
-                Secure Access
+            <h2 style="font-size: 2rem; margin-top: 2rem; margin-bottom: 1rem; color: #2D3748; font-weight: 700;">
+                Secure & Smart Recovery
             </h2>
-            <p style="color: #556; max-width: 450px; font-size: 1.1rem; line-height: 1.8;">
-                Manage your reports and profile securely with our dedicated portal.
+            <p style="color: #64748B; max-width: 400px; margin: 0 auto; font-size: 1.05rem; line-height: 1.6;">
+                Foundify connects you to what matters most with AI-powered matching and admin-verified security.
             </p>
         </div>
     </div>
+    <script src="{{ url_for('static', filename='offline.js') }}"></script>
 </body>
 
 </html>

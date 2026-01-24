@@ -8,9 +8,25 @@ from werkzeug.security import check_password_hash, generate_password_hash
 import os
 import datetime
 from ai_matcher import final_match
+import datetime
+from ai_matcher import final_match
+import re
+import requests
+import json
+from flask import Response, make_response
+from fpdf import FPDF
+import io
 
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
+
+# ---------- GOOGLE AUTH CONFIG ----------
+GOOGLE_CLIENT_ID = "1012648746060-51glmv6tkgpq1qv3qeuo9h76eopv5fgr.apps.googleusercontent.com"
+GOOGLE_CLIENT_SECRET = "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"
+GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
+
+def get_google_provider_cfg():
+    return requests.get(GOOGLE_DISCOVERY_URL).json()
 
 # ---------- MIDDLEWARE: BLOCK CHECK & SESSION INVALIDATION ----------
 @app.before_request
@@ -151,6 +167,18 @@ def init_super_admin():
 init_super_admin()
 
 # ---------- HELPER FUNCTIONS ----------
+def is_valid_password(password):
+    """
+    Enforces password policy:
+    - Minimum 8 characters
+    - At least one special character
+    """
+    if len(password) < 8:
+        return False
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        return False
+    return True
+
 def get_user_by_id(user_id_str):
     if not user_id_str:
         return None
@@ -193,7 +221,8 @@ def login():
             else:
                 return redirect("/user/dashboard")
 
-        return "Invalid credentials"
+        flash("Invalid username or password")
+        return redirect(request.url)
 
     return render_template("login.html")
 
@@ -203,13 +232,18 @@ def signup():
     if request.method == "POST":
         name = request.form["name"]
         email = request.form["email"]
+        if not is_valid_password(request.form["password"]):
+            flash("Password must be at least 8 characters long and include a special character.")
+            return redirect(request.url)
+
         password = generate_password_hash(request.form["password"])
 
         db = get_db()
         
         # Check if email exists
         if db.users.find_one({"email": email}):
-            return "Email already registered"
+            flash("Email already registered")
+            return redirect(request.url)
 
         try:
             db.users.insert_one({
@@ -227,6 +261,81 @@ def signup():
         return redirect("/login")
 
     return render_template("signup.html")
+
+# ---------- GOOGLE OAUTH ROUTES ----------
+@app.route("/google-login")
+def google_login():
+    # Get Google Provider Config
+    google_provider_cfg = get_google_provider_cfg()
+    authorization_endpoint = google_provider_cfg["authorization_endpoint"]
+
+    # Redirect request to Google for authentication
+    # Using manual URL construction to avoid external library dependencies
+    return redirect(f"{authorization_endpoint}?response_type=code&client_id={GOOGLE_CLIENT_ID}&redirect_uri={url_for('google_callback', _external=True)}&scope=openid%20email%20profile")
+
+@app.route("/auth/google/callback")
+def google_callback():
+    # Get Authorization Code
+    code = request.args.get("code")
+    
+    # Find Token Endpoint
+    google_provider_cfg = get_google_provider_cfg()
+    token_endpoint = google_provider_cfg["token_endpoint"]
+    
+    
+    # Exchange Code for Token
+    token_response = requests.post(
+        token_endpoint,
+        data={
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": url_for("google_callback", _external=True),
+            "grant_type": "authorization_code"
+        }
+    )
+    
+    # Parse User Info
+    userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
+    userinfo_response = requests.get(userinfo_endpoint, headers={"Authorization": f"Bearer {token_response.json()['access_token']}"})
+    
+    if userinfo_response.json().get("email_verified"):
+        unique_id = userinfo_response.json()["sub"]
+        users_email = userinfo_response.json()["email"]
+        users_name = userinfo_response.json()["given_name"]
+        
+        # Logic: Login or Register
+        db = get_db()
+        user = db.users.find_one({"email": users_email})
+        
+        if not user:
+            # Register
+            db.users.insert_one({
+                "name": users_name,
+                "email": users_email,
+                "password": None, # Google User
+                "role": "user",
+                "is_active": True,
+                "profile_completed": False,
+                "auth_provider": "google",
+                "created_at": datetime.datetime.utcnow()
+            })
+            user = db.users.find_one({"email": users_email})
+            
+        # Session
+        session["user_id"] = str(user["_id"])
+        session["role"] = user["role"]
+        session["session_version"] = user.get("session_version", 0) # Sync session version
+
+        # Intelligent Redirect based on Role
+        if user["role"] == "super_admin":
+            return redirect("/superadmin/dashboard")
+        elif user["role"] == "admin":
+            return redirect("/admin/dashboard")
+        else:
+            return redirect("/user/dashboard")
+        
+    return "User email not available or not verified by Google.", 400
 
 # ---------- SUPER ADMIN DASHBOARD ----------
 @app.route("/superadmin/dashboard")
@@ -331,29 +440,30 @@ def user_history():
     lost_items = list(db.lost_items.find({"user_id": ObjectId(session["user_id"])}).sort("created_at", -1))
     found_items = list(db.found_items.find({"user_id": ObjectId(session["user_id"])}).sort("created_at", -1))
     
-    # Simple Match Check (for indicators)
-    # Note: This is a basic check. In production, store match status in DB.
-    # We check if this user's lost item matches ANY found item in the system (and vice versa)
-    all_lost = list(db.lost_items.find())
-    all_found = list(db.found_items.find())
+    # Match Indicators via Notifications
+    # Efficiently check if there are match alerts for these items
+    match_alerts = list(db.notifications.find({
+        "user_id": ObjectId(session["user_id"]),
+        "type": "match_alert"
+    }))
+    
+    # Create sets of item IDs that have matches
+    lost_ids_with_matches = {n.get("lost_item_id") for n in match_alerts}
+    # Note: Found items usually don't get "match alerts" in this flow (only lost reporters do), 
+    # but if we reverse it later, we'd check found_item_id. 
+    # For now, we only flag Lost items that have found matches.
 
     for item in lost_items:
-        item['has_match'] = False
         item['id'] = str(item['_id'])
-        if item.get('status') == 'lost': # Only check active items
-             for found in all_found:
-                 if final_match(item, found)['final_score'] >= 0.5:
-                     item['has_match'] = True
-                     break
+        # Check if this active lost item has a generated notification
+        if item.get('status') == 'lost' and item['_id'] in lost_ids_with_matches:
+             item['has_match'] = True
+        else:
+             item['has_match'] = False
     
     for item in found_items:
-        item['has_match'] = False
         item['id'] = str(item['_id'])
-        if item.get('status') == 'found':
-             for lost in all_lost:
-                 if final_match(lost, item)['final_score'] >= 0.5:
-                     item['has_match'] = True
-                     break
+        item['has_match'] = False # Current flow doesn't notify finders of "lost matches" yet
 
     return render_template("user_history.html", user=user, lost_items=lost_items, found_items=found_items)
 
@@ -475,7 +585,7 @@ def report_lost():
              return redirect(request.url)
 
         db = get_db()
-        db.lost_items.insert_one({
+        result = db.lost_items.insert_one({
             "user_id": ObjectId(session["user_id"]),
             "item_name": item_name,
             "description": description,
@@ -486,6 +596,43 @@ def report_lost():
             "status": "lost",
             "created_at": datetime.datetime.utcnow()
         })
+
+        # ---------- AI MATCH & NOTIFICATION TRIGGER ----------
+        try:
+            # Find match candidates
+            found_candidates = list(db.found_items.find({"status": "found"}))
+            
+            lost_item_data = {
+                "item_name": item_name,
+                "description": description,
+                "image_path": primary_image_path
+            }
+
+            for found in found_candidates:
+                # Run AI Match
+                if "image_path" in found and found["image_path"]:
+                     score = final_match(lost_item_data, found)
+                     
+                     # Threshold Check (70%)
+                     if score["final_score"] >= 0.70:
+                         # Create Notification
+                         db.notifications.insert_one({
+                             "user_id": ObjectId(session["user_id"]),
+                             "lost_item_id": result.inserted_id,
+                             "found_item_id": found["_id"],
+                             "found_img": found["image_path"],
+                             "item_name": found["item_name"],
+                             "location": found["location"],
+                             "score": score["final_score"] * 100, # Convert to percentage
+                             "is_read": False,
+                             "created_at": datetime.datetime.utcnow(),
+                             "type": "match_alert"
+                         })
+                         print(f"Notification triggered for User {session['user_id']} - Score: {score['final_score']}")
+
+        except Exception as e:
+            print(f"Match Trigger Error: {e}")
+
         return redirect("/user/dashboard")
 
     return render_template("report_lost.html")
@@ -902,11 +1049,17 @@ def create_admin():
     if request.method == "POST":
         name = request.form["name"]
         email = request.form["email"]
-        password = generate_password_hash(request.form["password"])
+        raw_password = request.form["password"]
+        if not is_valid_password(raw_password):
+            flash("Password must be at least 8 characters long and include a special character.")
+            return redirect(request.url)
+            
+        password = generate_password_hash(raw_password)
 
         db = get_db()
         if db.users.find_one({"email": email}):
-             return "Email already exists"
+             flash("Email already exists")
+             return redirect(request.url)
 
         db.users.insert_one({
             "name": name,
@@ -924,11 +1077,191 @@ def create_admin():
 
     return render_template("create_admin.html")
 
+# ---------- NOTIFICATION APIs ----------
+@app.route("/api/notifications")
+def get_notifications():
+    if "user_id" not in session:
+        return {"error": "Unauthorized"}, 401
+
+    db = get_db()
+    
+    # Get unread or recent notifications (limit 10)
+    notifs = list(db.notifications.find(
+        {"user_id": ObjectId(session["user_id"])}
+    ).sort("created_at", -1).limit(10))
+    
+    unread_count = db.notifications.count_documents({
+        "user_id": ObjectId(session["user_id"]), 
+        "is_read": False
+    })
+
+    # Serialize
+    data = []
+    now = datetime.datetime.utcnow()
+    for n in notifs:
+        # Simple time ago logic
+        diff = now - n["created_at"]
+        if diff.days > 0:
+            time_str = f"{diff.days}d ago"
+        elif diff.seconds > 3600:
+            time_str = f"{diff.seconds // 3600}h ago"
+        elif diff.seconds > 60:
+            time_str = f"{diff.seconds // 60}m ago"
+        else:
+            time_str = "Just now"
+
+        data.append({
+            "id": str(n["_id"]),
+            "found_img": n.get("found_img", ""),
+            "item_name": n.get("item_name", "Unknown Item"),
+            "location": n.get("location", "Unknown"),
+            "score": int(n.get("score", 0)),
+            "is_read": n.get("is_read", False),
+            "time_ago": time_str
+        })
+
+    return {"notifications": data, "unread_count": unread_count}
+
+@app.route("/api/notifications/mark-read/<notif_id>", methods=["POST"])
+def mark_notification_read(notif_id):
+    if "user_id" not in session:
+        return {"error": "Unauthorized"}, 401
+        
+    db = get_db()
+    db.notifications.update_one(
+        {"_id": ObjectId(notif_id), "user_id": ObjectId(session["user_id"])},
+        {"$set": {"is_read": True}}
+    )
+    return {"status": "success"}
+
 # ---------- ERROR ----------
 @app.errorhandler(403)
 def forbidden(e):
     return "403 Forbidden – Access Denied", 403
 
 # ---------- RUN ----------
+@app.route("/admin/export-data")
+def export_data():
+    if session.get("role") not in ["admin", "super_admin"]:
+        abort(403)
+        
+    db = get_db()
+    
+    # --- Custom PDF Class ---
+    class PDF(FPDF):
+        def header(self):
+            # Logo
+            logo_path = os.path.join(app.root_path, 'uploads', 'foundify_logo.png')
+            if os.path.exists(logo_path):
+                self.image(logo_path, 10, 8, 15)
+            # Font
+            self.set_font('helvetica', 'B', 20)
+            # Title
+            self.cell(0, 15, 'Foundify System Report', border=False, align='C')
+            self.ln(20)
+
+        def footer(self):
+            self.set_y(-15)
+            self.set_font('helvetica', 'I', 8)
+            self.cell(0, 10, f'Page {self.page_no()}/{{nb}}', align='C')
+
+    # --- Generate PDF ---
+    pdf = PDF()
+    pdf.alias_nb_pages()
+    pdf.add_page()
+    pdf.set_font('helvetica', '', 12)
+
+    # 1. Summary Section
+    users = list(db.users.find({}, {"password": 0}))
+    lost_items = list(db.lost_items.find({}))
+    found_items = list(db.found_items.find({}))
+    confirmed_matches = list(db.chats.find({})) # Chats represent confirmed matches
+
+    pdf.set_font('helvetica', 'B', 14)
+    pdf.cell(0, 10, 'Executive Summary', ln=True)
+    pdf.set_font('helvetica', '', 12)
+    
+    # Draw simple stats box
+    pdf.set_fill_color(240, 240, 240)
+    pdf.cell(60, 10, f'Lost Items: {len(lost_items)}', border=1, fill=True, align='C')
+    pdf.cell(60, 10, f'Found Items: {len(found_items)}', border=1, fill=True, align='C')
+    pdf.cell(60, 10, f'Resolved Matches: {len(confirmed_matches)}', border=1, fill=True, align='C', ln=True)
+    pdf.ln(10)
+
+    # Helper for Tables
+    def draw_table_header(headers, widths):
+        pdf.set_font('helvetica', 'B', 10)
+        pdf.set_fill_color(246, 173, 85) # Brand Orange
+        pdf.set_text_color(255, 255, 255)
+        for h, w in zip(headers, widths):
+            pdf.cell(w, 8, h, border=1, fill=True, align='C')
+        pdf.ln()
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_font('helvetica', '', 9)
+
+    # Helper map for user names
+    user_map = {u['_id']: u.get('name', 'Unknown') for u in users}
+
+    # 2. MATCHED ITEMS (Resolutions)
+    pdf.set_font('helvetica', 'B', 14)
+    pdf.cell(0, 10, 'Resolved Matches (Recovered Items)', ln=True)
+
+    m_headers = ['Item Name', 'Reporter', 'Finder', 'Date Matched']
+    m_widths = [60, 50, 50, 30]
+    draw_table_header(m_headers, m_widths)
+
+    item_fill = False
+    for chat in confirmed_matches:
+        pdf.set_fill_color(245, 245, 245) if item_fill else pdf.set_fill_color(255, 255, 255)
+        
+        item_name = chat.get('item_name', 'Unknown')
+        reporter = user_map.get(chat.get('lost_user_id'), 'Unknown')
+        finder = user_map.get(chat.get('found_user_id'), 'Unknown')
+        date = chat.get('created_at').strftime('%Y-%m-%d') if chat.get('created_at') else 'N/A'
+        
+        pdf.cell(m_widths[0], 8, item_name[:30], border=1, fill=True)
+        pdf.cell(m_widths[1], 8, reporter[:25], border=1, fill=True)
+        pdf.cell(m_widths[2], 8, finder[:25], border=1, fill=True)
+        pdf.cell(m_widths[3], 8, date, border=1, fill=True, align='C', ln=True)
+        item_fill = not item_fill
+
+    pdf.ln(10)
+
+    # 3. Lost Items Table
+    if pdf.get_y() > 250: # Check if near bottom of page
+        pdf.add_page()
+    
+    pdf.set_font('helvetica', 'B', 14)
+    pdf.cell(0, 10, 'Lost Items Report', ln=True)
+    
+    l_headers = ['Item', 'Date', 'Location', 'Status']
+    l_widths = [50, 40, 60, 30]
+    draw_table_header(l_headers, l_widths)
+
+    item_fill = False
+    for item in lost_items:
+        pdf.set_fill_color(245, 245, 245) if item_fill else pdf.set_fill_color(255, 255, 255)
+        name = item.get('item_name', 'N/A')
+        date = item.get('date', 'N/A')
+        loc = item.get('location', 'N/A')
+        status = item.get('status', 'unknown')
+        
+        pdf.cell(l_widths[0], 8, name[:25], border=1, fill=True)
+        pdf.cell(l_widths[1], 8, date, border=1, fill=True)
+        pdf.cell(l_widths[2], 8, loc[:30], border=1, fill=True)
+        pdf.cell(l_widths[3], 8, status, border=1, fill=True, align='C', ln=True)
+        item_fill = not item_fill
+
+    # Output
+    pdf_buffer = io.BytesIO()
+    pdf.output(pdf_buffer)
+    pdf_buffer.seek(0)
+    
+    return Response(
+        pdf_buffer,
+        mimetype='application/pdf',
+        headers={'Content-Disposition': 'attachment;filename=foundify_report.pdf'}
+    )
+
 if __name__ == "__main__":
     app.run(debug=True)

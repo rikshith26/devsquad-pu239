@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Admin Profile - Lost & Found AI</title>
+    <title>Admin Profile - Foundify</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -158,9 +158,14 @@
                                 placeholder="e.g. IT Department" required>
                         </div>
                         <div>
-                            <label>Phone Number</label>
+                            <label>Secure Phone</label>
                             <input type="text" name="phone" value="{{ user.phone or '' }}" class="input-pill"
                                 placeholder="+91 00000 00000" required>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label>Email Address</label>
+                            <input type="email" value="{{ user.email }}" class="input-pill" readonly
+                                style="color: var(--text-muted); cursor: not-allowed;">
                         </div>
                     </div>
 

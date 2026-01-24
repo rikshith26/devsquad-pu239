@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+
+            @top-center {
+                content: "Foundify System Report";
+            }
+
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+            }
+        }
+
+        body {
+            font-family: Helvetica, sans-serif;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #F6AD55;
+        }
+
+        .logo {
+            height: 60px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #2D3748;
+            font-size: 24px;
+            margin: 0;
+        }
+
+        h2 {
+            color: #F6AD55;
+            font-size: 18px;
+            margin-top: 30px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .meta {
+            color: #718096;
+            font-size: 12px;
+            text-align: right;
+            margin-top: -30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 10px;
+        }
+
+        th {
+            background-color: #FFF7ED;
+            color: #F97316;
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            color: #4a5568;
+        }
+
+        .status-active {
+            color: #10B981;
+        }
+
+        .status-inactive {
+            color: #EF4444;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <!-- Logo Image (Base64) -->
+        <img src="data:image/png;base64,{{ logo_b64 }}" class="logo">
+        <h1>Foundify System Report</h1>
+        <div class="meta">
+            Generated on: {{ timestamp }}<br>
+            Exported by: {{ exporter_id }}
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div style="margin-bottom: 30px; background: #f7fafc; padding: 15px; border-radius: 8px;">
+        <table style="border: none;">
+            <tr>
+                <td style="border:none; text-align: center;"><strong>Total Users</strong><br><span
+                        style="font-size: 16px;">{{ counts.users }}</span></td>
+                <td style="border:none; text-align: center;"><strong>Lost Items</strong><br><span
+                        style="font-size: 16px;">{{ counts.lost_items }}</span></td>
+                <td style="border:none; text-align: center;"><strong>Found Items</strong><br><span
+                        style="font-size: 16px;">{{ counts.found_items }}</span></td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Users Section -->
+    <h2>Registered Users</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Profile</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in data.users %}
+            <tr>
+                <td>{{ user.name }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.role }}</td>
+                <td>
+                    {% if user.is_active %}
+                    <span class="status-active">Active</span>
+                    {% else %}
+                    <span class="status-inactive">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>{{ "Completed" if user.profile_completed else "Pending" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <pdf:nextpage />
+
+    <!-- Lost Items Section -->
+    <h2>Lost Items</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Date Lost</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data.lost_items %}
+            <tr>
+                <td>{{ item.item_name }}</td>
+                <td>{{ item.date }}</td>
+                <td>{{ item.location }}</td>
+                <td>{{ item.status }}</td>
+                <td>{{ item.description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <br>
+
+    <!-- Found Items Section -->
+    <h2>Found Items</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Item Name</th>
+                <th>Date Found</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data.found_items %}
+            <tr>
+                <td>{{ item.item_name }}</td>
+                <td>{{ item.date }}</td>
+                <td>{{ item.location }}</td>
+                <td>{{ item.status }}</td>
+                <td>{{ item.description }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top: 50px; text-align: center; color: #cbd5e0; font-size: 10px;">
+        &copy; 2024 Foundify System Report. Confidential.
+    </div>
+</body>
+
+</html>

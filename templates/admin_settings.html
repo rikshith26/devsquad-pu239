@@ -49,42 +49,196 @@
             <p style="color: var(--text-muted); font-size: 1.1rem;">Manage your account and system preferences.</p>
         </header>
 
-        <div class="fade-in" style="display: grid; gap: 2rem;">
-            <!-- Account Settings -->
-            <div style="background: white; padding: 2rem; border-radius: 16px; border: 1px solid #E2E8F0;">
-                <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
-                    <span class="material-icons" style="color: #4F46E5;">manage_accounts</span>
-                    Account Settings
-                </h3>
-                <form onsubmit="event.preventDefault(); alert('Password change simulated.');">
-                    <div style="margin-bottom: 1.5rem;">
-                        <label
-                            style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-main);">Current
-                            Password</label>
-                        <input type="password" class="form-control" placeholder="Enter current password"
-                            style="width: 100%; max-width: 400px;">
+        <div class="fade-in"
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem;">
+
+            <!-- Account Security Card -->
+            <div class="settings-card">
+                <div class="card-header">
+                    <div class="icon-box" style="background: #EEF2FF; color: #4F46E5;">
+                        <span class="material-icons">security</span>
                     </div>
-                    <div style="margin-bottom: 1.5rem;">
-                        <label
-                            style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-main);">New
-                            Password</label>
-                        <input type="password" class="form-control" placeholder="Enter new password"
-                            style="width: 100%; max-width: 400px;">
+                    <h3>Account Security</h3>
+                </div>
+                <form onsubmit="event.preventDefault(); alert('Password updated!');">
+                    <div class="form-group">
+                        <label>Current Password</label>
+                        <input type="password" class="form-input" placeholder="••••••••">
                     </div>
-                    <button type="submit" class="btn btn-primary">Update Password</button>
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" class="form-input" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Update Password</button>
                 </form>
             </div>
 
-            <!-- System Settings (Placeholder) -->
-            <div
-                style="background: white; padding: 2rem; border-radius: 16px; border: 1px solid #E2E8F0; opacity: 0.7;">
-                <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem;">
-                    <span class="material-icons" style="color: #64748B;">tune</span>
-                    System Preferences
-                </h3>
-                <p style="color: var(--text-muted);">More settings coming soon...</p>
+            <!-- System Preferences Card -->
+            <div class="settings-card">
+                <div class="card-header">
+                    <div class="icon-box" style="background: #FFF7ED; color: #F97316;">
+                        <span class="material-icons">tune</span>
+                    </div>
+                    <h3>System Preferences</h3>
+                </div>
+                <div class="setting-item">
+                    <div>
+                        <h4>Maintenance Mode</h4>
+                        <p class="text-sm text-muted">Temporarily disable access for users.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div class="setting-item" style="border-bottom: none;">
+                    <div>
+                        <h4>Auto-Approve Matches</h4>
+                        <p class="text-sm text-muted">Skip admin verification for high-confidence AI matches (>95%).</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
             </div>
+
+            <!-- Data Management Card -->
+            <div class="settings-card">
+                <div class="card-header">
+                    <div class="icon-box" style="background: #F3F4F6; color: #4B5563;">
+                        <span class="material-icons">database</span>
+                    </div>
+                    <h3>Data Management</h3>
+                </div>
+                <p class="text-muted" style="margin-bottom: 1.5rem;">Generate and download a complete system report.</p>
+
+                <a href="/admin/export-data" class="btn btn-primary"
+                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem; text-align: center;">
+                    <span class="material-icons" style="font-size: 18px;">download</span>
+                    Export System Data
+                </a>
+            </div>
+
         </div>
+
+        <style>
+            /* Local Settings Styles */
+            .settings-card {
+                background: white;
+                border-radius: 20px;
+                padding: 2rem;
+                box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.5);
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+
+            .settings-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
+            }
+
+            .card-header {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .icon-box {
+                width: 48px;
+                height: 48px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .form-group {
+                margin-bottom: 1.5rem;
+            }
+
+            .form-input {
+                width: 100%;
+                padding: 0.75rem 1rem;
+                border: 2px solid #F3F4F6;
+                border-radius: 12px;
+                font-family: inherit;
+                transition: all 0.2s;
+            }
+
+            .form-input:focus {
+                border-color: #F6AD55;
+                outline: none;
+                box-shadow: 0 0 0 4px rgba(246, 173, 85, 0.1);
+            }
+
+            .setting-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem 0;
+                border-bottom: 1px solid #F3F4F6;
+            }
+
+            .text-sm {
+                font-size: 0.875rem;
+            }
+
+            /* Toggle Switch */
+            .switch {
+                position: relative;
+                display: inline-block;
+                width: 50px;
+                height: 26px;
+                flex-shrink: 0;
+            }
+
+            .switch input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+            .slider {
+                position: absolute;
+                cursor: pointer;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: #E5E7EB;
+                transition: .4s;
+            }
+
+            .slider:before {
+                position: absolute;
+                content: "";
+                height: 20px;
+                width: 20px;
+                left: 3px;
+                bottom: 3px;
+                background-color: white;
+                transition: .4s;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            input:checked+.slider {
+                background-color: #F6AD55;
+            }
+
+            input:checked+.slider:before {
+                transform: translateX(24px);
+            }
+
+            .slider.round {
+                border-radius: 34px;
+            }
+
+            .slider.round:before {
+                border-radius: 50%;
+            }
+        </style>
     </main>
 </body>
 

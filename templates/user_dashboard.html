@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Lost & Found AI</title>
+    <title>Dashboard - Foundify</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
@@ -12,9 +12,9 @@
 <body class="dashboard-container">
     <nav class="sidebar">
         <div
-            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; color: var(--text-main);">
-            <span class="material-icons text-gradient" style="font-size: 28px;">search</span>
-            Lost & Found
+            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.5rem; color: var(--text-main);">
+            <img src="/uploads/foundify_logo.png" alt="Foundify Logo" style="height: 36px; width: auto;">
+            Foundify
         </div>
 
         <a href="/user/dashboard" class="nav-link active">
@@ -58,9 +58,34 @@
             </div>
 
             <div style="display: flex; gap: 1rem; align-items: center;">
-                <div
-                    style="width: 48px; height: 48px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft);">
-                    <span class="material-icons" style="color: var(--text-muted);">notifications</span>
+                <!-- Notification Bell -->
+                <div class="notification-container" style="position: relative;">
+                    <div onclick="toggleNotifications()"
+                        style="cursor: pointer; width: 48px; height: 48px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft); position: relative;">
+                        <span class="material-icons" style="color: var(--text-muted);">notifications</span>
+                        <span id="notification-badge"
+                            style="position: absolute; top: -5px; right: -5px; background: #EF4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; display: none;">
+                            0
+                        </span>
+                    </div>
+
+                    <!-- Dropdown -->
+                    <div id="notification-dropdown"
+                        style="display: none; position: absolute; top: 60px; right: 0; width: 360px; background: white; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); z-index: 1000; overflow: hidden; border: 1px solid rgba(0,0,0,0.05); animation: slideDown 0.2s ease-out;">
+                        <div
+                            style="padding: 1.25rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);">
+                            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-main);">
+                                Notifications</h4>
+                        </div>
+                        <div id="notification-list" style="max-height: 400px; overflow-y: auto;">
+                            <!-- Items injected by JS -->
+                            <div style="padding: 3rem 1rem; text-align: center; color: var(--text-muted);">
+                                <span class="material-icons"
+                                    style="font-size: 48px; opacity: 0.3; margin-bottom: 1rem;">notifications_off</span>
+                                <p style="margin: 0;">No notifications yet</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- USER AVATAR -->
@@ -164,6 +189,8 @@
     </a>
 
     <script src="{{ url_for('static', filename='auth_check.js') }}"></script>
+    <script src="{{ url_for('static', filename='notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='offline.js') }}"></script>
 </body>
 
 </html>

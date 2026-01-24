@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Admin - Lost & Found AI</title>
+    <title>Create Admin - Foundify</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
@@ -15,6 +15,18 @@
             <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--text-main);">Create New Admin</h1>
             <p style="color: var(--text-muted);">Register a new administrator account.</p>
         </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div
+            style="background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+            {% for message in messages %}
+            <p style="margin: 0;">{{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
 
         <form method="POST">
             <div class="form-group">
@@ -30,7 +42,9 @@
             <div class="form-group">
                 <label
                     style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">Password</label>
-                <input type="password" name="password" class="form-input" placeholder="Secure Password" required>
+                <input type="password" name="password" class="form-input" placeholder="Secure Password" required
+                    minlength="8" pattern="(?=.*[!@#$%^&*(),.?\:{}|<>]).{8,}"
+                    title="Must be at least 8 characters and include a special character.">
             </div>
 
             <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
@@ -45,6 +59,8 @@
             </a>
         </div>
     </div>
+    </div>
+    <script src="{{ url_for('static', filename='offline.js') }}"></script>
 </body>
 
 </html>
