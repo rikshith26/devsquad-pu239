@@ -110,41 +110,61 @@
             </div>
 
             {% for match in matches %}
-            <div class="admin-row">
-                <!-- Images -->
-                <img src="/{{ match.lost.image_path }}"
-                    style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover; border: 2px solid #F8FAFC;">
-                <img src="/{{ match.found.image_path }}"
-                    style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover; border: 2px solid #F8FAFC;">
+            <div class="match-card"
+                style="background: white; border-radius: 24px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
 
-                <!-- Details -->
-                <div style="display: flex; align-items: center; gap: 2rem;">
-                    <div style="flex: 1;">
-                        <h4 style="font-size: 1.1rem; margin-bottom: 0.25rem;">{{ match.lost.item_name }}</h4>
-                        <p style="color: var(--text-muted); font-size: 0.9rem;">Match found in "{{ match.found.location
-                            }}"</p>
-                    </div>
-
-                    <!-- Confidence Visualization -->
-                    <div style="display: flex; gap: 1.5rem;">
-                        <div class="confidence-ring"
-                            style="background: conic-gradient(#F59E0B {{ match.score.text_score }}%, #E2E8F0 {{ match.score.text_score }}%); color: #F59E0B;">
-                            {{ match.score.text_score }}%
-                        </div>
-                        <div class="confidence-ring"
-                            style="background: conic-gradient(#10B981 {{ match.score.image_score }}%, #E2E8F0 {{ match.score.image_score }}%); color: #10B981;">
-                            {{ match.score.image_score }}%
-                        </div>
-                    </div>
+                <!-- Left: Images -->
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <img src="/{{ match.lost.image_path }}"
+                        style="width: 80px; height: 80px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <img src="/{{ match.found.image_path }}"
+                        style="width: 80px; height: 80px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 </div>
 
-                <!-- Action -->
-                <div>
+                <!-- Middle: Text Details -->
+                <div style="flex: 1;">
+                    <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">
+                        {{ match.lost.item_name }}
+                    </h4>
+                    <p style="color: #94A3B8; font-size: 1rem; margin: 0; font-weight: 500;">
+                        Match found in "{{ match.found.location }}"
+                    </p>
+                </div>
+
+                <!-- Right: Metrics & Action -->
+                <div style="display: flex; align-items: center; gap: 2.5rem;">
+
+                    <!-- Confidence Rings -->
+                    <div style="display: flex; gap: 1rem;">
+                        <!-- Text Score (Orange) -->
+                        <div class="confidence-ring" title="Text Match: {{ match.score.text_score }}%"
+                            style="width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem;
+                                    background: conic-gradient(#F59E0B {{ match.score.text_score }}%, #F3F4F6 0%); color: white; position: relative;">
+                            <div
+                                style="position: absolute; width: 40px; height: 40px; background: white; border-radius: 50%;">
+                            </div>
+                            <span style="position: relative; color: #F59E0B;">{{ match.score.text_score | int }}</span>
+                        </div>
+
+                        <!-- Image Score (Green) -->
+                        <div class="confidence-ring" title="Image Match: {{ match.score.image_score }}%"
+                            style="width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem;
+                                    background: conic-gradient(#10B981 {{ match.score.image_score }}%, #F3F4F6 0%); color: white; position: relative;">
+                            <div
+                                style="position: absolute; width: 40px; height: 40px; background: white; border-radius: 50%;">
+                            </div>
+                            <span style="position: relative; color: #10B981;">{{ match.score.image_score | int }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Approve Button -->
                     <a href="/admin/approve-match/{{ match.lost.lost_id }}/{{ match.found.found_id }}"
-                        class="btn btn-primary" style="padding: 0.75rem 1.5rem; font-size: 0.9rem; width: 100%;">
+                        style="background: linear-gradient(90deg, #FB923C 0%, #EC4899 100%); color: white; padding: 0.75rem 2.5rem; border-radius: 99px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); transition: transform 0.2s;"
+                        onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                         Approve
                     </a>
                 </div>
+
             </div>
             {% else %}
             <div style="text-align: center; padding: 6rem; background: white; border-radius: 24px;">

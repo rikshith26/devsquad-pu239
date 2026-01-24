@@ -112,13 +112,6 @@
                     {% for item in lost_items %}
                     <div class="history-card" style="position: relative;">
                         <!-- Match Badge -->
-                        {% if item.has_match and item.status == 'lost' %}
-                        <div
-                            style="position: absolute; top: -8px; right: -8px; background: #2DD4BF; color: white; border-radius: 99px; padding: 0.25rem 0.75rem; font-size: 0.75rem; font-weight: 700; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                            Potential Match
-                        </div>
-                        {% endif %}
-
                         <img src="/{{ item.image_path }}"
                             style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
 

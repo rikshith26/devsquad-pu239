@@ -110,11 +110,15 @@ DB_NAME = "lost_found_ai"
 
 import certifi
 
+mongo_client = None
+
 def get_db():
+    global mongo_client
     try:
-        # Added tlsAllowInvalidCertificates=True to help with some network/firewall configurations
-        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where(), tlsAllowInvalidCertificates=True)
-        return client[DB_NAME]
+        if mongo_client is None:
+             # Added tlsAllowInvalidCertificates=True to help with some network/firewall configurations
+             mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where(), tlsAllowInvalidCertificates=True)
+        return mongo_client[DB_NAME]
     except Exception as e:
         print(f"Database Connection Error: {e}")
         return None
@@ -432,6 +436,11 @@ def user_history():
         abort(403)
 
     db = get_db()
+    
+    if db is None:
+        flash("System unavailable. Please try again later.", "error")
+        return redirect("/user/dashboard")
+
     user = db.users.find_one({"_id": ObjectId(session["user_id"])})
     if user:
         user['id'] = str(user['_id'])
@@ -440,30 +449,11 @@ def user_history():
     lost_items = list(db.lost_items.find({"user_id": ObjectId(session["user_id"])}).sort("created_at", -1))
     found_items = list(db.found_items.find({"user_id": ObjectId(session["user_id"])}).sort("created_at", -1))
     
-    # Match Indicators via Notifications
-    # Efficiently check if there are match alerts for these items
-    match_alerts = list(db.notifications.find({
-        "user_id": ObjectId(session["user_id"]),
-        "type": "match_alert"
-    }))
-    
-    # Create sets of item IDs that have matches
-    lost_ids_with_matches = {n.get("lost_item_id") for n in match_alerts}
-    # Note: Found items usually don't get "match alerts" in this flow (only lost reporters do), 
-    # but if we reverse it later, we'd check found_item_id. 
-    # For now, we only flag Lost items that have found matches.
-
     for item in lost_items:
         item['id'] = str(item['_id'])
-        # Check if this active lost item has a generated notification
-        if item.get('status') == 'lost' and item['_id'] in lost_ids_with_matches:
-             item['has_match'] = True
-        else:
-             item['has_match'] = False
     
     for item in found_items:
         item['id'] = str(item['_id'])
-        item['has_match'] = False # Current flow doesn't notify finders of "lost matches" yet
 
     return render_template("user_history.html", user=user, lost_items=lost_items, found_items=found_items)
 
@@ -585,6 +575,10 @@ def report_lost():
              return redirect(request.url)
 
         db = get_db()
+        if db is None:
+             flash("System unavailable. Please try again later.", "error")
+             return redirect(request.url)
+
         result = db.lost_items.insert_one({
             "user_id": ObjectId(session["user_id"]),
             "item_name": item_name,
@@ -596,42 +590,6 @@ def report_lost():
             "status": "lost",
             "created_at": datetime.datetime.utcnow()
         })
-
-        # ---------- AI MATCH & NOTIFICATION TRIGGER ----------
-        try:
-            # Find match candidates
-            found_candidates = list(db.found_items.find({"status": "found"}))
-            
-            lost_item_data = {
-                "item_name": item_name,
-                "description": description,
-                "image_path": primary_image_path
-            }
-
-            for found in found_candidates:
-                # Run AI Match
-                if "image_path" in found and found["image_path"]:
-                     score = final_match(lost_item_data, found)
-                     
-                     # Threshold Check (70%)
-                     if score["final_score"] >= 0.70:
-                         # Create Notification
-                         db.notifications.insert_one({
-                             "user_id": ObjectId(session["user_id"]),
-                             "lost_item_id": result.inserted_id,
-                             "found_item_id": found["_id"],
-                             "found_img": found["image_path"],
-                             "item_name": found["item_name"],
-                             "location": found["location"],
-                             "score": score["final_score"] * 100, # Convert to percentage
-                             "is_read": False,
-                             "created_at": datetime.datetime.utcnow(),
-                             "type": "match_alert"
-                         })
-                         print(f"Notification triggered for User {session['user_id']} - Score: {score['final_score']}")
-
-        except Exception as e:
-            print(f"Match Trigger Error: {e}")
 
         return redirect("/user/dashboard")
 
@@ -676,6 +634,10 @@ def report_found():
              return redirect(request.url)
 
         db = get_db()
+        if db is None:
+             flash("System unavailable. Please try again later.", "error")
+             return redirect(request.url)
+             
         db.found_items.insert_one({
             "user_id": ObjectId(session["user_id"]),
             "item_name": item_name,
@@ -696,6 +658,12 @@ def report_found():
 def admin_settings():
     if session.get("role") not in ["admin", "super_admin"]:
         abort(403)
+        
+    db = get_db()
+    if db is None:
+         flash("Database Error: Settings currently unavailable.", "error")
+         return redirect("/")
+         
     return render_template("admin_settings.html")
 
 # ---------- ADMIN DASHBOARD & MATCHING ----------
@@ -705,10 +673,19 @@ def admin_dashboard():
         abort(403)
 
     db = get_db()
-    
+    if db is None:
+        flash("Database Error: Could not connect to system. Please try again later.", "error")
+        return redirect("/")
+
     # Fetch all items
-    lost_items = list(db.lost_items.find({"status": "lost"}))
-    found_items = list(db.found_items.find({"status": "found"}))
+    try:
+        lost_items = list(db.lost_items.find({"status": "lost"}))
+        found_items = list(db.found_items.find({"status": "found"}))
+    except Exception as e:
+        print(f"Query Error: {e}")
+        flash("Database Query Failed.", "error")
+        lost_items = []
+        found_items = []
 
     # Add id aliases for template compatibility
     for item in lost_items:
@@ -716,17 +693,24 @@ def admin_dashboard():
     for item in found_items:
         item['found_id'] = str(item['_id'])
 
+    print(f"DEBUG: Found {len(lost_items)} lost items and {len(found_items)} found items.")
     matches = []
     for lost in lost_items:
         for found in found_items:
+            # print(f"DEBUG: Comparing {lost.get('item_name')} vs {found.get('item_name')}")
             if lost.get("image_path") and found.get("image_path"):
-                score = final_match(lost, found)
-                if score["final_score"] >= 0.5:
-                    matches.append({
-                        "lost": lost,
-                        "found": found,
-                        "score": score
-                    })
+                try:
+                    score = final_match(lost, found)
+                    # print(f"DEBUG: Score: {score}")
+                    # Lower threshold temporarily to 0.1 for debugging
+                    if score["final_score"] >= 0.1: 
+                        matches.append({
+                            "lost": lost,
+                            "found": found,
+                            "score": score
+                        })
+                except Exception as e:
+                    print(f"DEBUG: Match Error: {e}")
 
     return render_template(
         "admin_dashboard.html",
@@ -752,7 +736,21 @@ def approve_match(lost_id, found_id):
     found_item = db.found_items.find_one({"_id": ObjectId(found_id)})
     
     if lost_item and found_item:
-        # 3. Create Chat Room
+        # 3. Create Notification for Lost Item Reporter
+        db.notifications.insert_one({
+             "user_id": lost_item["user_id"],
+             "lost_item_id": ObjectId(lost_id),
+             "found_item_id": ObjectId(found_id),
+             "found_img": found_item.get("image_path"),
+             "item_name": found_item.get("item_name", "Item"),
+             "location": found_item.get("location", "Unknown"),
+             "is_read": False,
+             "created_at": datetime.datetime.utcnow(),
+             "type": "match_approved",
+             "message": f"Great news! We found a match for your '{lost_item['item_name']}'."
+        })
+
+        # 4. Create Chat Room
         chat_data = {
             "lost_item_id": ObjectId(lost_id),
             "found_item_id": ObjectId(found_id),
@@ -853,6 +851,10 @@ def admin_users():
         abort(403)
 
     db = get_db()
+    if db is None:
+        flash("Database Error: User list currently unavailable.", "error")
+        return redirect("/")
+
     users = list(db.users.find())
     
     # Process users for template
