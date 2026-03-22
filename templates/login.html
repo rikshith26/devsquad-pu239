@@ -4,150 +4,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Foundify</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <style>
-        /* Login Specific Compact Styles */
-        body,
-        .split-layout {
-            height: 100vh !important;
-            overflow: hidden !important;
-        }
-
-        .split-left {
-            padding: 3rem !important;
-            /* Reduced from 5rem */
-            justify-content: center;
-        }
-
-        h1 {
-            font-size: 2.5rem !important;
-            margin-bottom: 0.25rem !important;
-        }
-
-        p {
-            margin-bottom: 1.5rem !important;
-        }
-
-        .form-group {
-            margin-bottom: 1rem !important;
-        }
-
-        .form-input {
-            padding: 0.875rem 1rem !important;
-        }
-
-        .btn {
-            padding: 0.875rem 2rem !important;
-        }
-
-        /* Logo Adjustment */
-        .split-left>div:first-child img {
-            height: 36px !important;
-        }
-
-        .split-left>div:first-child {
-            font-size: 1.5rem !important;
-            margin-bottom: 1rem !important;
-        }
-    </style>
+    <title>Sign In // Foundify</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth_sliding.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 
-<body class="split-layout">
-    <div class="split-left fade-in">
-        <div style="margin-bottom: auto;">
-            <div
-                style="display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 2rem; color: var(--text-main);">
-                <img src="/uploads/foundify_logo.png" alt="Foundify Logo" style="height: 48px; width: auto;">
-                Foundify
-            </div>
-        </div>
+<body class="page-login">
 
-        <div style="max-width: 400px; width: 100%;">
-            <h1 class="text-gradient" style="font-size: 3rem; line-height: 1.2; margin-bottom: 0.5rem;">
-                Welcome Back
-            </h1>
-            <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1.1rem;">
-                Sign in to continue your search or help others.
-            </p>
+    <div class="auth-container" id="container">
 
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages() %}
-            {% if messages %}
-            <div
-                style="background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
-                {% for message in messages %}
-                <p style="margin: 0;">{{ message }}</p>
-                {% endfor %}
-            </div>
-            {% endif %}
-            {% endwith %}
-
-            <form method="POST">
-                <div class="form-group">
-                    <label style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">
-                        Email Address
-                    </label>
-                    <input type="email" name="email" class="form-input" placeholder="name@example.com" required>
+        <!-- LEFT: SIGN IN FORM -->
+        <div class="form-container">
+            <form method="POST" action="/login">
+                <h1 class="form-title">Sign in</h1>
+                <div class="social-container">
+                    <a href="/google-login" class="social"><i class="fab fa-google"></i></a>
+                    <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
                 </div>
+                <span style="font-size: 12px; margin-bottom: 15px; color: #aaa;">or use your account</span>
 
-                <div class="form-group">
-                    <label style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">
-                        Password
-                    </label>
-                    <input type="password" name="password" class="form-input" placeholder="Enter password" required>
+                <!-- FLASH MESSAGES -->
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <div style="color: #ff6b6b; font-size: 0.9rem; margin-bottom: 1rem;">
+                    {% for message in messages %}
+                    {{ message }}
+                    {% endfor %}
                 </div>
+                {% endif %}
+                {% endwith %}
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
-                    Sign In
-                </button>
+                <input type="email" name="email" placeholder="Email" required />
+                <input type="password" name="password" placeholder="Password" required />
+                <a href="/forgot-password">Forgot your password?</a>
+                <button type="submit" class="primary">Sign In</button>
 
-                <div style="text-align: center; margin: 1.5rem 0; position: relative;">
-                    <span
-                        style="background: white; padding: 0 10px; color: var(--text-muted); position: relative; z-index: 1;">OR</span>
-                    <div
-                        style="height: 1px; background: #E2E8F0; position: absolute; top: 50%; left: 0; right: 0; z-index: 0;">
-                    </div>
-                </div>
-
-                <a href="/google-login" class="btn"
-                    style="width: 100%; border: 1px solid #E2E8F0; background: white; color: var(--text-main); display: flex; align-items: center; justify-content: center; gap: 0.75rem; font-weight: 500;">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" style="width: 20px; height: 20px;">
-                    Continue with Google
-                </a>
+                <!-- Mobile Toggle -->
+                <a href="/signup" class="mobile-toggle">Need an account? Sign Up</a>
             </form>
-
-            <div style="margin-top: 2.5rem; text-align: center; color: var(--text-muted);">
-                Don't have an account?
-                <a href="/signup" style="color: #F6AD55; font-weight: 600;">Sign up</a>
-            </div>
         </div>
 
+        <!-- RIGHT: OVERLAY PANEL -->
+        <div class="overlay-container">
+            <h1 class="overlay-title">Hello, Friend!</h1>
+            <p>Enter your personal details and start your journey with us</p>
+            <button class="ghost" id="signUp">Sign Up</button>
+        </div>
 
     </div>
 
-    <div class="split-right"
-        style="background: linear-gradient(135deg, #FDFBF7 0%, #FFF7ED 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
-        <!-- Background Elements -->
-        <div
-            style="position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(167,139,250,0.1) 0%, rgba(255,255,255,0) 70%); top: 50%; left: 50%; transform: translate(-50%, -50%);">
-        </div>
-
-        <!-- Illustration -->
-        <div class="fade-in" style="position: relative; z-index: 2; text-align: center; padding: 2rem;">
-            <img src="{{ url_for('static', filename='login_new.jpg') }}" alt="Foundify Secure Search"
-                style="max-width: 100%; height: auto; max-height: 500px; filter: drop-shadow(0 20px 40px rgba(167,139,250,0.15)); transition: transform 0.5s ease; border-radius: 12px;">
-
-            <h2 style="font-size: 2rem; margin-top: 2rem; margin-bottom: 1rem; color: #2D3748; font-weight: 700;">
-                Secure & Smart Recovery
-            </h2>
-            <p style="color: #64748B; max-width: 400px; margin: 0 auto; font-size: 1.05rem; line-height: 1.6;">
-                Foundify connects you to what matters most with AI-powered matching and admin-verified security.
-            </p>
-        </div>
-    </div>
-    <script src="{{ url_for('static', filename='offline.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth_sliding.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mobile_check.js') }}"></script>
 </body>
 
 </html>

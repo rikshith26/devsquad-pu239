@@ -1,0 +1,356 @@
+/* 
+   AUTH SLIDING THEME 
+   Split-screen design with sliding gradient panel.
+   Theme: "Morning Light" (Peach/Rose/Warm).
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Quicksand:wght@300;400;500;600;700&family=Caveat:wght@400;700&display=swap');
+
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-paper: #fdfbf7;
+    --text-ink: #2d3436;
+    --text-pencil: #636e72;
+    --accent-peach: #ff9f43;
+    --accent-rose: #ff6b6b;
+    --accent-sky: #54a0ff;
+    --font-primary: 'Outfit', sans-serif;
+    --font-hand: 'Caveat', cursive;
+}
+
+body {
+    background: var(--bg-paper);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    font-family: var(--font-primary);
+    background-image: radial-gradient(#e6e6e6 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.auth-container {
+    background-color: #fff;
+    border-radius: 20px;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.1),
+        0 10px 10px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+    width: 850px;
+    max-width: 100%;
+    min-height: 550px;
+}
+
+/* FORM CONTAINER (LEFT/RIGHT) */
+.form-container {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    transition: all 0.6s ease-in-out;
+    width: 60%;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 50px;
+    /* Standard spacing */
+    text-align: center;
+    background: white;
+}
+
+/* OVERLAY CONTAINER (OPPOSITE SIDE) */
+.overlay-container {
+    position: absolute;
+    top: 0;
+    width: 40%;
+    /* Narrower Overlay */
+    height: 100%;
+    overflow: hidden;
+    transition: transform 0.6s ease-in-out;
+    z-index: 100;
+    /* WARM GRADIENT */
+    background: linear-gradient(135deg, #ff9f43, #ff6b6b);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0 40px;
+}
+
+/* SPECIFIC PAGE LAYOUTS
+   We rely on body classes added in the templates 
+   (page-login vs page-signup) to determine initial positions.
+*/
+
+/* LOGIN PAGE: Form on Left, Overlay on Right */
+body.page-login .form-container {
+    left: 0;
+}
+
+body.page-login .overlay-container {
+    right: 0;
+}
+
+/* SIGNUP PAGE: Form on Right, Overlay on Left */
+body.page-signup .form-container {
+    right: 0;
+    /* Form moves to right */
+    opacity: 1;
+    z-index: 5;
+}
+
+/* For signup, we want the overlay on the left */
+body.page-signup .overlay-container {
+    left: 0;
+}
+
+
+/* TRANSITION STATE (Expanded) 
+   When JS adds 'expanded', overlay grows to cover Everything.
+*/
+.auth-container.expanded .overlay-container {
+    width: 100%;
+    z-index: 200;
+    transition: width 0.6s ease-in-out;
+}
+
+
+/* TYPOGRAPHY */
+h1 {
+    font-weight: 700;
+    margin: 0;
+    margin-bottom: 0.5rem;
+    color: inherit;
+    letter-spacing: -0.5px;
+}
+
+h1.form-title {
+    color: var(--text-ink);
+    font-size: 2.2rem;
+    /* Larger, bolder */
+    margin-bottom: 2rem;
+    letter-spacing: -1px;
+}
+
+h1.overlay-title {
+    color: #ffffff;
+    font-family: var(--font-hand);
+    /* Handwritten style */
+    font-size: 3.5rem;
+    /* Much larger */
+    margin-bottom: 0.5rem;
+    line-height: 1;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+p {
+    font-size: 1.1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: 0.3px;
+    margin: 20px 0 40px;
+    color: #ffffff;
+    max-width: 80%;
+    /* Prevent too wide text */
+}
+
+/* Helper Text (e.g. "or use your account") */
+span {
+    font-size: 0.85rem;
+    color: #a0a0a0;
+    /* Subtle text */
+    margin-bottom: 20px;
+    font-weight: 400;
+}
+
+a {
+    color: var(--text-ink);
+    font-size: 0.9rem;
+    text-decoration: none;
+    margin: 20px 0;
+    /* More spacing for links */
+    transition: 0.3s;
+    font-weight: 600;
+}
+
+a:hover {
+    color: var(--accent-peach);
+    text-decoration: underline;
+}
+
+/* BUTTONS */
+button.ghost {
+    background-color: transparent;
+    border-color: #ffffff;
+    color: #ffffff;
+    border: 2px solid white;
+}
+
+button.ghost:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+button.primary {
+    background-color: var(--text-ink);
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    /* Subtle shadow */
+    margin-top: 10px;
+}
+
+button.primary:hover {
+    background-color: #000;
+    transform: scale(1.05);
+    /* Hover scale */
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+button {
+    border-radius: 50px;
+    border: 1px solid var(--text-ink);
+    color: #ffffff;
+    font-size: 13px;
+    /* Slightly larger text */
+    font-weight: 800;
+    /* Bolder */
+    padding: 15px 50px;
+    /* Larger button */
+    letter-spacing: 1.5px;
+    /* Uppercase spacing */
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    font-family: var(--font-primary);
+}
+
+button:active {
+    transform: scale(0.95);
+}
+
+button:focus {
+    outline: none;
+}
+
+/* INPUTS */
+form {
+    background-color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    padding: 0 20px;
+    /* Internal breathing room */
+}
+
+input {
+    background-color: #f8f9fa;
+    /* Very light grey/white */
+    border: 1px solid #e0e0e0;
+    /* Light clean border */
+    padding: 12px 20px;
+    /* Soft inner padding */
+    margin: 10px 0;
+    /* Increased vertical spacing */
+    width: 100%;
+    max-width: 320px;
+    /* Controlled width */
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    color: var(--text-ink);
+    font-weight: 500;
+}
+
+input::placeholder {
+    color: #b0b0b0;
+    /* Lighter than label */
+    font-weight: 400;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--accent-peach);
+    background-color: #fff;
+    box-shadow: 0 4px 15px rgba(255, 159, 67, 0.15);
+    /* Soft premium glow */
+    transform: translateY(-2px);
+    /* Slight lift */
+}
+
+/* SOCIAL ICONS */
+.social-container {
+    margin: 25px 0;
+    /* Increased gap */
+}
+
+.social-container a {
+    border: 1px solid #e0e0e0;
+    border-radius: 50%;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 8px;
+    /* Increased gap between icons */
+    height: 45px;
+    /* Slightly larger circles */
+    width: 45px;
+    color: var(--text-ink);
+    transition: all 0.3s ease;
+    text-decoration: none;
+    /* No underline */
+}
+
+.social-container a:hover {
+    background-color: #fff;
+    border-color: var(--accent-peach);
+    color: var(--accent-peach);
+    transform: scale(1.1) rotate(5deg);
+    /* Scale + Twist */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .auth-container {
+        flex-direction: column;
+        width: 90%;
+        min-height: auto;
+        padding-bottom: 2rem;
+        height: auto;
+    }
+
+    .form-container {
+        position: relative;
+        width: 100%;
+        padding: 30px;
+        height: auto;
+    }
+
+    .overlay-container {
+        display: none;
+    }
+
+    .mobile-toggle {
+        display: block;
+        margin-top: 20px;
+        color: var(--accent-peach);
+        font-weight: 600;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-toggle {
+        display: none;
+    }
+}

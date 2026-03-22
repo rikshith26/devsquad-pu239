@@ -4,115 +4,219 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Messages - Foundify</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Messages // Foundify</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/memories.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* STATIC LIST ITEM */
+        .chat-list-item {
+            display: grid;
+            grid-template-columns: 60px 1fr 150px;
+            padding: 1.2rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            align-items: center;
+            gap: 1.5rem;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .chat-list-item:hover {
+            background-color: rgba(0, 0, 0, 0.01);
+        }
+
+        .chat-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .chat-header {
+            display: grid;
+            grid-template-columns: 60px 1fr 150px;
+            padding: 1rem 0;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+            font-weight: 700;
+            color: var(--text-pencil);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            gap: 1.5rem;
+        }
+
+        .chat-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--bg-cream);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-sky);
+        }
+
+        .latest-msg-preview {
+            font-size: 0.9rem;
+            color: var(--text-pencil);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 400px;
+        }
+
+        @media (max-width: 768px) {
+            .chat-header {
+                display: none;
+            }
+
+            .paper-card-static {
+                padding: 0 !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+
+            .chat-list-item {
+                display: grid;
+                grid-template-columns: 50px 1fr auto;
+                gap: 1rem;
+                background: white;
+                padding: 1rem;
+                margin-bottom: 0.5rem;
+                border-radius: 12px;
+                border: 1px solid rgba(0, 0, 0, 0.03);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+                align-items: center;
+            }
+
+            .chat-icon {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+            }
+
+            .chat-info {
+                overflow: hidden;
+            }
+
+            .latest-msg-preview {
+                max-width: 100%;
+            }
+
+            .chat-date {
+                display: block;
+                /* Show date on mobile too */
+                font-size: 0.7rem;
+                color: var(--text-pencil);
+                white-space: nowrap;
+            }
+        }
+
+        /* STATIC CONTAINER */
+        .paper-card-static {
+            background: white;
+            border-radius: var(--radius-soft);
+            padding: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            position: relative;
+            overflow: hidden;
+            transition: none !important;
+            transform: none !important;
+        }
+    </style>
 </head>
 
-<body class="dashboard-container">
-    <nav class="sidebar">
-        <div
-            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.5rem; color: var(--text-main);">
-            <img src="/uploads/foundify_logo.png" alt="Foundify Logo" style="height: 36px; width: auto;">
-            Foundify
+<body class="layout-compact">
+    {% include 'loader.html' %}
+
+    <aside class="sidebar" style="height: 100vh;">
+        <div style="margin-bottom: 2rem;">
+            <div style="font-weight: 700; color: var(--text-ink); font-size: 1.2rem;">Foundify</div>
         </div>
-        <a href="/user/dashboard" class="nav-link">
-            <span class="material-icons">dashboard</span>
-            Dashboard
-        </a>
-        <a href="/user/chats" class="nav-link active">
-            <span class="material-icons">chat</span>
-            Messages
-            {% if chats %}
-            <span
-                style="background: var(--accent-red); color: white; padding: 2px 6px; border-radius: 99px; font-size: 0.7rem; margin-left: auto;">{{
-                chats|length }}</span>
-            {% endif %}
-        </a>
-        <a href="/user/history" class="nav-link">
-            <span class="material-icons">history</span>
-            History
-        </a>
+
+        <nav>
+            <a href="/user/dashboard" class="sidebar-link">
+                <span class="material-icons">dashboard</span> Dashboard
+            </a>
+            <a href="/user/chats" class="sidebar-link active">
+                <span class="material-icons">mark_email_unread</span> Messages
+            </a>
+            <a href="/user/history" class="sidebar-link">
+                <span class="material-icons">history_edu</span> My History
+            </a>
+        </nav>
+
         <div style="margin-top: auto;">
-            <a href="/logout" class="nav-link" style="color: var(--accent-red);">
-                <span class="material-icons" style="color: var(--accent-red);">logout</span>
-                Logout
+            <a href="/logout" class="sidebar-link" style="color: var(--accent-rose);">
+                <span class="material-icons">logout</span> Logout
             </a>
         </div>
-    </nav>
+    </aside>
 
-    <main class="main-content">
-        <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-                <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-main);">My Messages</h1>
-                <p style="color: var(--text-muted); font-size: 1.1rem;">Securely chat with other students about items.
-                </p>
-            </div>
-
-            <!-- Notification Bell -->
-            <div class="notification-container" style="position: relative;">
-                <div onclick="toggleNotifications()"
-                    style="cursor: pointer; width: 48px; height: 48px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft); position: relative;">
-                    <span class="material-icons" style="color: var(--text-muted);">notifications</span>
-                    <span id="notification-badge"
-                        style="position: absolute; top: -5px; right: -5px; background: #EF4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; display: none;">
-                        0
-                    </span>
-                </div>
-
-                <!-- Dropdown -->
-                <div id="notification-dropdown"
-                    style="display: none; position: absolute; top: 60px; right: 0; width: 360px; background: white; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); z-index: 1000; overflow: hidden; border: 1px solid rgba(0,0,0,0.05);">
-                    <div
-                        style="padding: 1.25rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);">
-                        <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-main);">
-                            Notifications</h4>
-                    </div>
-                    <div id="notification-list" style="max-height: 400px; overflow-y: auto;">
-                        <!-- Items injected by JS -->
-                        <div style="padding: 3rem 1rem; text-align: center; color: var(--text-muted);">
-                            <span class="material-icons"
-                                style="font-size: 48px; opacity: 0.3; margin-bottom: 1rem;">notifications_off</span>
-                            <p style="margin: 0;">No notifications yet</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <main class="main-with-sidebar">
+        <header style="margin-bottom: 2rem;">
+            <h1 style="font-size: 1.8rem; margin-bottom: 0.2rem;">Messages</h1>
+            <p style="color: var(--text-pencil); font-size: 0.9rem;">Conversations about lost and found items.</p>
         </header>
 
         {% if chats %}
-        <div class="history-grid">
+        <div class="paper-card-static">
+            <div class="chat-header">
+                <div></div>
+                <div>Conversation</div>
+                <div style="text-align: right;">Started</div>
+            </div>
+
             {% for chat in chats %}
-            <a href="/user/chat/{{ chat.id }}" class="history-card"
-                style="text-decoration: none; color: inherit; transition: transform 0.2s;">
-                <div
-                    style="width: 60px; height: 60px; background: #EEF2FF; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                    <span class="material-icons" style="color: #6366F1; font-size: 28px;">forum</span>
+            <a href="/user/chat/{{ chat.id }}" class="chat-list-item">
+                <div class="chat-icon">
+                    <span class="material-icons">mail_outline</span>
                 </div>
-                <div style="flex: 1;">
-                    <h4 style="margin: 0; font-size: 1.1rem;">{{ chat.item_name }}</h4>
-                    <p style="margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.9rem;">
-                        Role: {{ chat.role_desc }} • Started: {{ chat.created_at.strftime('%b %d') }}
-                    </p>
-                    <p
-                        style="margin: 0.5rem 0 0; color: var(--text-main); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">
-                        {{ chat.messages[-1].text }}
-                    </p>
+
+                <div class="chat-info">
+                    <div style="font-weight: 600; color: var(--text-ink); font-size: 1rem; margin-bottom: 0.2rem;">{{
+                        chat.item_name }}</div>
+                    <div class="latest-msg-preview">
+                        <span style="color: var(--accent-peach); font-weight: 600;">Latest:</span> {{
+                        chat.messages[-1].text }}
+                    </div>
                 </div>
-                <span class="material-icons" style="color: var(--text-muted);">chevron_right</span>
+
+                <div class="chat-date" style="text-align: right; font-size: 0.85rem; color: var(--text-pencil);">
+                    {{ chat.created_at.strftime('%b %d') }}
+                </div>
             </a>
             {% endfor %}
         </div>
         {% else %}
-        <div style="text-align: center; padding: 6rem; background: white; border-radius: 24px;">
+        <div class="paper-card-static" style="text-align: center; padding: 4rem 1rem;">
             <span class="material-icons"
-                style="font-size: 48px; color: #CBD5E1; margin-bottom: 1rem;">chat_bubble_outline</span>
-            <p style="color: var(--text-muted);">No active chats. Chats start when an Admin approves a match.</p>
+                style="font-size: 3rem; color: #eee; margin-bottom: 1rem;">mark_email_read</span>
+            <p style="color: var(--text-pencil);">No messages yet.</p>
         </div>
         {% endif %}
+
     </main>
-    <script src="{{ url_for('static', filename='auth_check.js') }}"></script>
-    <script src="{{ url_for('static', filename='notifications.js') }}"></script>
+
+    <!-- MOBILE BOTTOM NAV -->
+    <div class="mobile-nav">
+        <a href="/user/dashboard" class="mobile-nav-link">
+            <span class="material-icons">dashboard</span>
+            Dashboard
+        </a>
+        <a href="/user/chats" class="mobile-nav-link active">
+            <span class="material-icons">mark_email_unread</span>
+            Chats
+        </a>
+        <a href="/user/profile" class="mobile-nav-link">
+            <span class="material-icons">account_circle</span>
+            Profile
+        </a>
+        <a href="/user/history" class="mobile-nav-link">
+            <span class="material-icons">history_edu</span>
+            History
+        </a>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/memories_core.js') }}"></script>
 </body>
 
 </html>

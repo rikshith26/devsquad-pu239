@@ -1,0 +1,12 @@
+flask
+flask-mail
+pymongo
+dnspython
+requests
+fpdf
+certifi
+opencv-python-headless
+numpy
+spacy
+pillow
+pillow-heif

@@ -2,11 +2,22 @@ from flask import (
     Flask, render_template, request, redirect,
     session, abort, url_for, send_from_directory, flash
 )
+import pillow_heif
+from PIL import Image
+pillow_heif.register_heif_opener()
+
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 import datetime
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer
 from ai_matcher import final_match
 import datetime
 from ai_matcher import final_match
@@ -20,9 +31,26 @@ import io
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
 
+# PROXY FIX: Trust headers from Render/Heroku/AWS (X-Forwarded-Proto)
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# ---------- MAIL CONFIGURATION ----------
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'burrarikshith@gmail.com' # REPLACE WITH YOUR EMAIL
+app.config['MAIL_PASSWORD'] = 'jjef uhoe avwu rfjn'    # REPLACE WITH YOUR APP PASSWORD
+app.config['MAIL_DEFAULT_SENDER'] = 'burrarikshith@gmail.com'
+
+mail = Mail(app)
+serializer = URLSafeTimedSerializer(app.secret_key)
+
 # ---------- GOOGLE AUTH CONFIG ----------
-GOOGLE_CLIENT_ID = "1012648746060-51glmv6tkgpq1qv3qeuo9h76eopv5fgr.apps.googleusercontent.com"
-GOOGLE_CLIENT_SECRET = "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"
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
 
 def get_google_provider_cfg():
@@ -104,6 +132,11 @@ os.makedirs("uploads/lost", exist_ok=True)
 os.makedirs("uploads/found", exist_ok=True)
 os.makedirs("uploads/profile", exist_ok=True)
 
+# ---------- SERVE UPLOADS ----------
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory('uploads', filename)
+
 # ---------- MONGODB CONNECTION ----------
 MONGO_URI = "mongodb+srv://devsquaddatabase:DEVSQUAD@devsquad239.jdlqcko.mongodb.net/?appName=devsquad239"
 DB_NAME = "lost_found_ai"
@@ -114,23 +147,37 @@ mongo_client = None
 
 def get_db():
     global mongo_client
-    try:
-        if mongo_client is None:
-             # Added tlsAllowInvalidCertificates=True to help with some network/firewall configurations
-             mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where(), tlsAllowInvalidCertificates=True)
-        return mongo_client[DB_NAME]
-    except Exception as e:
-        print(f"Database Connection Error: {e}")
-        return None
+    if mongo_client is None:
+        try:
+            # 1. Try with Certifi (Best Practice)
+            print("Connecting to MongoDB (Certifi Mode)...")
+            client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where())
+            client.server_info() # Trigger connection check
+            mongo_client = client
+            print("SUCCESS: Connected to MongoDB Atlas (Certifi Mode)")
+        except Exception as e:
+            print(f"Certifi Connection Failed: {e}")
+            try:
+                # 2. Retry with Standard (System Certs)
+                print("Retrying with Standard Connection...")
+                client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+                client.server_info()
+                mongo_client = client
+                print("SUCCESS: Connected to MongoDB Atlas (Standard Mode)")
+            except Exception as e2:
+                print(f"Standard Connection Failed: {e2}")
+                try:
+                    # 3. Retry with SSL/TLS bypass (Unsafe/Dev)
+                    print("Retrying with tlsAllowInvalidCertificates=True...")
+                    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000, tlsAllowInvalidCertificates=True)
+                    client.server_info()
+                    mongo_client = client
+                    print("SUCCESS: Connected to MongoDB Atlas (Unsafe TLS Mode)")
+                except Exception as e3:
+                    print(f"CRITICAL: Could not connect to MongoDB. {e3}")
+                    return None
+    return mongo_client[DB_NAME] if mongo_client else None
 
-# Check connection immediately
-try:
-    print("Connecting to MongoDB...")
-    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000, tlsCAFile=certifi.where(), tlsAllowInvalidCertificates=True)
-    client.server_info() # Trigger connection
-    print("SUCCESS: Connected to MongoDB Atlas!")
-except Exception as e:
-    print(f"\nCRITICAL ERROR: Could not connect to MongoDB.\nDetails: {e}\n\nPOSSIBLE CAUSES:\n1. YOUR IP IS NOT WHITELISTED IN MONGODB ATLAS (Most Likely)\n2. Firewall/VPN is blocking the connection.\n")
 
 # ---------- SUPER ADMIN AUTO-CREATION ----------
 SEED_ADMINS = [
@@ -193,12 +240,34 @@ def get_user_by_id(user_id_str):
         return None
 
 # ---------- SERVE UPLOADS ----------
+from urllib.parse import unquote
 @app.route("/uploads/<path:filename>")
 def uploaded_files(filename):
+    filename = unquote(filename)
     return send_from_directory("uploads", filename)
 
+@app.route("/")
+def index():
+    if "user_id" in session:
+        db = get_db()
+        if db is not None:
+            user = db.users.find_one({"_id": ObjectId(session["user_id"])})
+            if user:
+                # If logged in, send them to their dashboard
+                if user.get("role") == "super_admin":
+                    return redirect("/superadmin/dashboard")
+                elif user.get("role") == "admin":
+                    return redirect("/admin/dashboard")
+                else:
+                    return redirect("/user/dashboard")
+    return render_template("index.html")
+
+@app.route("/prompt-login")
+def prompt_login():
+    flash("Please register or login to our website to access these features!", "info")
+    return redirect("/login")
+
 # ---------- LOGIN ----------
-@app.route("/", methods=["GET", "POST"])
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -206,6 +275,10 @@ def login():
         password = request.form["password"]
 
         db = get_db()
+        if db is None:
+            flash("System busy/unavailable. Please try again.", "error")
+            return redirect("/login")
+            
         # Find user regardless of active status
         user = db.users.find_one({"email": email})
 
@@ -224,11 +297,78 @@ def login():
                 return redirect("/admin/dashboard")
             else:
                 return redirect("/user/dashboard")
-
-        flash("Invalid username or password")
-        return redirect(request.url)
+        
+        flash("Invalid email or password", "error")
+        return redirect("/login")
 
     return render_template("login.html")
+
+# ---------- FORGOT PASSWORD ----------
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form["email"]
+        db = get_db()
+        user = db.users.find_one({"email": email})
+
+        if user:
+            token = serializer.dumps(email, salt='password-reset-salt')
+            link = url_for('reset_password', token=token, _external=True)
+            
+            # DEFAULT: Print link to console for testing/development
+            print(f"\n==================================================")
+            print(f"PASSWORD RESET LINK (Click to test):")
+            print(f"{link}")
+            
+            print(f"==================================================\n")
+
+            msg = Message("Reset your password", recipients=[email])
+            # Render HTML template with the link
+            msg.html = render_template("email_reset.html", link=link)
+            
+            try:
+                mail.send(msg)
+                flash("Reset link sent to your email!", "success")
+            except Exception as e:
+                print(f"Error sending email: {e}")
+                flash("Error sending email. Please try again later.", "danger")
+        
+        else:
+             # Consistent message to prevent user enumeration
+             flash("If an account exists, a reset link has been sent.", "info")
+             
+        return redirect(url_for('login'))
+
+    return render_template("forgot_password.html")
+
+@app.route("/reset-password/<token>", methods=["GET", "POST"])
+def reset_password(token):
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=3600) # 1 hour expiration
+    except:
+        flash("The reset link is invalid or has expired.", "danger")
+        return redirect(url_for('login'))
+
+    if request.method == "POST":
+        password = request.form["password"]
+        confirm_password = request.form["confirm_password"]
+
+        if password != confirm_password:
+            flash("Passwords do not match.", "danger")
+            return redirect(url_for('reset_password', token=token))
+        
+        if not is_valid_password(password):
+             flash("Password must be at least 8 characters and contain a special character.", "danger")
+             return redirect(url_for('reset_password', token=token))
+
+        db = get_db()
+        hashed_password = generate_password_hash(password)
+        db.users.update_one({"email": email}, {"$set": {"password": hashed_password}})
+        
+        flash("Your password has been updated! You can now log in.", "success")
+        return redirect(url_for('login'))
+
+    return render_template("reset_password.html", token=token)
 
 # ---------- SIGNUP ----------
 @app.route("/signup", methods=["GET", "POST"])
@@ -399,6 +539,10 @@ def user_dashboard():
         abort(403)
 
     db = get_db()
+    if db is None:
+        flash("System unavailable. Please try again later.", "error")
+        return redirect("/login")
+
     user = db.users.find_one({"_id": ObjectId(session["user_id"])})
     if user:
         user['id'] = str(user['_id'])
@@ -427,7 +571,25 @@ def user_dashboard():
     except Exception as e:
         print(f"Leaderboard Error: {e}")
 
-    return render_template("user_dashboard.html", user=user, leaderboard=formatted_leaderboard)
+    # RECENT ACTIVITY LOGIC
+    recent_activity = []
+    try:
+        # Get last 3 resolved/matched items to show hope
+        recent_found = list(db.found_items.find({"status": {"$in": ["matched", "resolved"]}}).sort("_id", -1).limit(3))
+        for item in recent_found:
+             finder = db.users.find_one({"_id": item["user_id"]})
+             recent_activity.append({
+                 "item": item["item_name"],
+                 "finder": finder["name"] if finder else "A Helper",
+                 "finder_photo": finder.get("profile_photo") if finder else None,
+                 "status": item["status"],
+                 "image": item.get("image_path"),
+                 "time": item.get("created_at", datetime.datetime.utcnow()).strftime("%d %b")
+             })
+    except Exception as e:
+        print(f"Activity Error: {e}")
+
+    return render_template("user_dashboard.html", user=user, leaderboard=formatted_leaderboard, recent_activity=recent_activity)
 
 # ---------- USER HISTORY ----------
 @app.route("/user/history")
@@ -474,6 +636,13 @@ def resolve_item(item_type, item_id):
     
     new_status = 'resolved'
     collection.update_one({"_id": ObjectId(item_id)}, {"$set": {"status": new_status}})
+    
+    # CLEANUP: Remove from AI Suggestions since it's resolved
+    if item_type == 'lost':
+        db.ai_suggestions.delete_many({"lost_id": ObjectId(item_id)})
+    else:
+        db.ai_suggestions.delete_many({"found_id": ObjectId(item_id)})
+
     flash("Item marked as resolved.")
     return redirect("/user/history")
 
@@ -536,6 +705,29 @@ def profile_complete():
     user = db.users.find_one({"_id": ObjectId(session["user_id"])})
     return user.get("profile_completed", False) if user else False
 
+# ---------- HELPER: SAVE IMAGE ----------
+def save_image(file, folder):
+    if not file or file.filename == '':
+        return None
+    
+    filename = secure_filename(file.filename)
+    name, ext = os.path.splitext(filename)
+    
+    # Generate unique filename
+    unique_filename = f"{session.get('user_id')}_{int(datetime.datetime.now().timestamp())}_{name}.jpg" # Always save as .jpg
+    filepath = os.path.join("uploads", folder, unique_filename) # Relative path
+    abs_filepath = os.path.join(app.root_path, filepath) # Absolute path
+    
+    try:
+        # Open image (handles HEIC thanks to register_heif_opener)
+        image = Image.open(file)
+        image = image.convert('RGB') # Convert to RGB (handles RGBA, P, etc for JPEG)
+        image.save(abs_filepath, "JPEG", quality=85)
+        return filepath.replace("\\", "/") # Return relative path with forward slashes
+    except Exception as e:
+        print(f"Image Save Error: {e}")
+        return None
+
 # ---------- REPORT LOST ----------
 @app.route("/user/report-lost", methods=["GET", "POST"])
 def report_lost():
@@ -556,41 +748,29 @@ def report_lost():
         if not item_name or not description or not location or not date:
             flash("Please fill in all required fields.")
             return redirect(request.url)
-
+            
         saved_image_paths = []
-        for image in images:
-             if image and image.filename and len(saved_image_paths) < 5:
-                # Generate unique filename
-                timestamp = int(datetime.datetime.utcnow().timestamp())
-                filename = f"{session['user_id']}_{timestamp}_{image.filename}"
-                image_path = f"uploads/lost/{filename}"
-                image.save(image_path)
-                saved_image_paths.append(image_path)
-        
-        # Backward compatibility: use first image as 'image_path'
-        primary_image_path = saved_image_paths[0] if saved_image_paths else None
+        for img in images:
+            path = save_image(img, "lost")
+            if path:
+                saved_image_paths.append(path)
 
-        if not primary_image_path:
-             flash("At least one image is required.")
-             return redirect(request.url)
+        primary_image_path = saved_image_paths[0] if saved_image_paths else "static/images/default_item.png"
 
         db = get_db()
-        if db is None:
-             flash("System unavailable. Please try again later.", "error")
-             return redirect(request.url)
-
-        result = db.lost_items.insert_one({
+        db.lost_items.insert_one({
             "user_id": ObjectId(session["user_id"]),
             "item_name": item_name,
             "description": description,
             "location": location,
             "date": date,
-            "image_path": primary_image_path, # Main image for AI/Admin
-            "additional_images": saved_image_paths, # All images
+            "image_path": primary_image_path,
+            "additional_images": saved_image_paths,
             "status": "lost",
             "created_at": datetime.datetime.utcnow()
         })
-
+        
+        flash("Report submitted successfully!")
         return redirect("/user/dashboard")
 
     return render_template("report_lost.html")
@@ -600,7 +780,7 @@ def report_lost():
 def report_found():
     if session.get("role") != "user":
         abort(403)
-
+        
     if not profile_complete():
         return redirect("/user/profile")
 
@@ -611,44 +791,36 @@ def report_found():
         date = request.form.get("date")
         images = request.files.getlist("image")
 
-        # Validation
-        if not item_name or not description or not location or not date:
-            flash("Please fill in all required fields.")
+        if not item_name:
+            flash("Item name is required.")
             return redirect(request.url)
-
+            
         saved_image_paths = []
-        for image in images:
-             if image and image.filename and len(saved_image_paths) < 5:
-                # Generate unique filename
-                timestamp = int(datetime.datetime.utcnow().timestamp())
-                filename = f"{session['user_id']}_{timestamp}_{image.filename}"
-                image_path = f"uploads/found/{filename}"
-                image.save(image_path)
-                saved_image_paths.append(image_path)
-        
-        # Backward compatibility
-        primary_image_path = saved_image_paths[0] if saved_image_paths else None
+        for img in images:
+            path = save_image(img, "found")
+            if path:
+                saved_image_paths.append(path)
 
-        if not primary_image_path:
-             flash("At least one image is required.")
-             return redirect(request.url)
+        primary_image_path = saved_image_paths[0] if saved_image_paths else "static/images/default_item.png"
 
         db = get_db()
         if db is None:
              flash("System unavailable. Please try again later.", "error")
              return redirect(request.url)
-             
+
         db.found_items.insert_one({
             "user_id": ObjectId(session["user_id"]),
             "item_name": item_name,
             "description": description,
             "location": location,
             "date": date,
-            "image_path": primary_image_path, # Main image
-            "additional_images": saved_image_paths, # All images
+            "image_path": primary_image_path,
+            "additional_images": saved_image_paths,
             "status": "found",
             "created_at": datetime.datetime.utcnow()
         })
+        
+        flash("Found item reported! We'll notify you if there's a match.")
         return redirect("/user/dashboard")
 
     return render_template("report_found.html")
@@ -668,49 +840,41 @@ def admin_settings():
 
 # ---------- ADMIN DASHBOARD & MATCHING ----------
 @app.route("/admin/dashboard")
+
 def admin_dashboard():
     if session.get("role") not in ["admin", "super_admin"]:
         abort(403)
 
     db = get_db()
-    if db is None:
-        flash("Database Error: Could not connect to system. Please try again later.", "error")
-        return redirect("/")
-
-    # Fetch all items
+    
+    # Fetch RAW items for the "Recent Reports" feed
     try:
-        lost_items = list(db.lost_items.find({"status": "lost"}))
-        found_items = list(db.found_items.find({"status": "found"}))
+        lost_items = list(db.lost_items.find({"status": "lost"}).sort("created_at", -1))
+        found_items = list(db.found_items.find({"status": "found"}).sort("created_at", -1))
     except Exception as e:
-        print(f"Query Error: {e}")
-        flash("Database Query Failed.", "error")
         lost_items = []
         found_items = []
 
-    # Add id aliases for template compatibility
-    for item in lost_items:
-        item['lost_id'] = str(item['_id'])
-    for item in found_items:
-        item['found_id'] = str(item['_id'])
-
-    print(f"DEBUG: Found {len(lost_items)} lost items and {len(found_items)} found items.")
+    # Fetch PRE-COMPUTED Matches from DB
     matches = []
-    for lost in lost_items:
-        for found in found_items:
-            # print(f"DEBUG: Comparing {lost.get('item_name')} vs {found.get('item_name')}")
-            if lost.get("image_path") and found.get("image_path"):
-                try:
-                    score = final_match(lost, found)
-                    # print(f"DEBUG: Score: {score}")
-                    # Lower threshold temporarily to 0.1 for debugging
-                    if score["final_score"] >= 0.1: 
-                        matches.append({
-                            "lost": lost,
-                            "found": found,
-                            "score": score
-                        })
-                except Exception as e:
-                    print(f"DEBUG: Match Error: {e}")
+    try:
+        suggestions = list(db.ai_suggestions.find({}).sort("score.final_score", -1))
+        
+        for sugg in suggestions:
+            # Reconstruct the full objects for the template
+            lost = db.lost_items.find_one({"_id": sugg["lost_id"]})
+            found = db.found_items.find_one({"_id": sugg["found_id"]})
+            
+            if lost and found and lost["status"] == "lost" and found["status"] == "found":
+                lost['lost_id'] = str(lost['_id'])
+                found['found_id'] = str(found['_id'])
+                matches.append({
+                    "lost": lost,
+                    "found": found,
+                    "score": sugg["score"]
+                })
+    except Exception as e:
+        print(f"Suggestions Fetch Error: {e}")
 
     return render_template(
         "admin_dashboard.html",
@@ -718,6 +882,58 @@ def admin_dashboard():
         found_items=found_items,
         matches=matches
     )
+
+# ---------- TRIGGER SCANS ----------
+@app.route("/admin/run-scan")
+def run_ai_scan():
+    if session.get("role") not in ["admin", "super_admin"]:
+        abort(403)
+        
+    db = get_db()
+    force_rescan = request.args.get('force') == 'true'
+
+    if force_rescan:
+        db.ai_suggestions.delete_many({})
+    
+    # Fetch active items
+    lost_items = list(db.lost_items.find({"status": "lost"}))
+    found_items = list(db.found_items.find({"status": "found"}))
+    
+    count = 0
+    skips = 0
+    
+    # Run Comparisons
+    for lost in lost_items:
+        for found in found_items:
+            # Skip if no images
+            if not lost.get("image_path") or not found.get("image_path"):
+                continue
+
+            # SMART SKIP (DISABLED FOR DEBUGGING)
+            # if not force_rescan:
+            #     existing = db.ai_suggestions.find_one({
+            #         "lost_id": lost["_id"],
+            #         "found_id": found["_id"]
+            #     })
+            #     if existing:
+            #         skips += 1
+            #         continue
+                
+            try:
+                score = final_match(lost, found)
+                # Keep threshold reasonably low/inclusive for the suggestions DB
+                if score["final_score"] >= 0.2:  # Lowered Threshold
+                    db.ai_suggestions.update_one(
+                        {"lost_id": lost["_id"], "found_id": found["_id"]},
+                        {"$set": {"score": score, "created_at": datetime.datetime.utcnow()}},
+                        upsert=True
+                    )
+                    count += 1
+            except Exception as e:
+                print(f"Match Error: {e}")
+                
+    flash(f"Scan complete. Found {count} new matches. (Skipped {skips} existing comparisons)", "success")
+    return redirect("/admin/dashboard")
 
 # ---------- ADMIN: APPROVE MATCH ----------
 @app.route("/admin/approve-match/<lost_id>/<found_id>")
@@ -750,13 +966,15 @@ def approve_match(lost_id, found_id):
              "message": f"Great news! We found a match for your '{lost_item['item_name']}'."
         })
 
-        # 4. Create Chat Room
+        # 4. Create Chat Room with EMBEDDED DETAILS (since items will be deleted)
         chat_data = {
-            "lost_item_id": ObjectId(lost_id),
+            "lost_item_id": ObjectId(lost_id), # Kept for reference ID
             "found_item_id": ObjectId(found_id),
             "lost_user_id": lost_item["user_id"],
             "found_user_id": found_item["user_id"],
-            "item_name": lost_item["item_name"], # Common name
+            "item_name": lost_item["item_name"],
+            "item_image": lost_item.get("image_path"), # Preserved Image
+            "found_location": found_item.get("location"),
             "status": "active",
             "created_at": datetime.datetime.utcnow(),
             "messages": [
@@ -769,7 +987,17 @@ def approve_match(lost_id, found_id):
         }
         db.chats.insert_one(chat_data)
         
-    flash("Match confirmed! Users have been notified.")
+        # 5. Remove from AI Suggestions
+        db.ai_suggestions.delete_many({
+            "lost_id": ObjectId(lost_id),
+            "found_id": ObjectId(found_id)
+        })
+
+        # 6. DELETE Items (Data Cleanup)
+        db.lost_items.delete_one({"_id": ObjectId(lost_id)})
+        db.found_items.delete_one({"_id": ObjectId(found_id)})
+        
+    flash("Match confirmed! Items removed from active list and chat created.")
     return redirect("/admin/dashboard")
 
 # ---------- CHAT SYSTEM ----------
@@ -1265,5 +1493,49 @@ def export_data():
         headers={'Content-Disposition': 'attachment;filename=foundify_report.pdf'}
     )
 
+# ---------- SOCKET IO EVENTS ----------
+@socketio.on('join')
+def on_join(data):
+    room = data['room']
+    join_room(room)
+    print(f"User joined room: {room}")
+
+@socketio.on('leave')
+def on_leave(data):
+    room = data['room']
+    leave_room(room)
+    print(f"User left room: {room}")
+
+@socketio.on('send_message')
+def on_send_message(data):
+    room = data['room']
+    message_text = data['message']
+    sender_id = data['sender_id']
+    
+    db = get_db()
+    
+    # Create message object
+    message = {
+        "sender_id": ObjectId(sender_id),
+        "text": message_text,
+        "timestamp": datetime.datetime.utcnow(),
+        "is_read": False
+    }
+    
+    # Update Chat in DB
+    db.chats.update_one(
+        {"_id": ObjectId(room)},
+        {"$push": {"messages": message}, "$set": {"last_updated": datetime.datetime.utcnow()}}
+    )
+    
+    # Broadcast to room
+    emit('receive_message', {
+        "text": message_text,
+        "sender_id": sender_id,
+        "timestamp": datetime.datetime.utcnow().strftime('%H:%M')
+    }, room=room)
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Use socketio.run instead of app.run for better stability on Windows
+    print("Starting Foundify with SocketIO...")
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)

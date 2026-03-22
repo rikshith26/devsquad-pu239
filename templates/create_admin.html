@@ -4,63 +4,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Admin - Foundify</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Create Admin // Foundify</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/memories.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* Custom "No-Card" Form Styles */
+        .organic-form-container {
+            width: 100%;
+            max-width: 480px;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .blob-bg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.05), rgba(255, 159, 67, 0.05));
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            z-index: -1;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-ink);
+            font-size: 1.1rem;
+        }
+
+        .minimal-input {
+            width: 100%;
+            padding: 1rem 0;
+            border: none;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+            background: transparent;
+            font-family: var(--font-primary);
+            font-size: 1.2rem;
+            color: var(--text-ink);
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
+
+        .minimal-input:focus {
+            outline: none;
+            border-bottom-color: var(--accent-rose);
+        }
+
+        .minimal-input::placeholder {
+            color: rgba(0, 0, 0, 0.3);
+        }
+    </style>
 </head>
 
-<body class="flex-center" style="min-height: 100vh;">
-    <div class="card fade-in" style="width: 100%; max-width: 500px; padding: 3rem;">
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: var(--text-main);">Create New Admin</h1>
-            <p style="color: var(--text-muted);">Register a new administrator account.</p>
+<body style="min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow-x: hidden;">
+
+    <!-- Back Link (Floating Top Left) -->
+    <a href="/superadmin/dashboard"
+        style="position: absolute; top: 2rem; left: 2rem; text-decoration: none; color: var(--text-pencil); display: flex; align-items: center; gap: 0.5rem; font-weight: 500; transition: color 0.3s; z-index: 10;">
+        <span class="material-icons">arrow_back</span> Dashboard
+    </a>
+
+    <div class="organic-form-container">
+
+        <!-- Background Blob -->
+        <div class="blob-bg"></div>
+
+        <div style="text-align: center; margin-bottom: 3rem;">
+            <div
+                style="display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: rgba(255, 107, 107, 0.1); border-radius: 50%; margin-bottom: 1rem;">
+                <span class="material-icons" style="color: var(--accent-rose); font-size: 2rem;">person_add</span>
+            </div>
+            <h1 style="font-size: 2.5rem; line-height: 1.2; margin-bottom: 0.5rem;">New Admin</h1>
+            <p style="color: var(--text-pencil);">Expand the team.</p>
         </div>
 
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages() %}
         {% if messages %}
-        <div
-            style="background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+        <div style="margin-bottom: 2rem;">
             {% for message in messages %}
-            <p style="margin: 0;">{{ message }}</p>
+            <p
+                style="color: var(--accent-rose); text-align: center; background: rgba(255, 107, 107, 0.1); padding: 0.5rem; border-radius: 8px;">
+                {{ message }}</p>
             {% endfor %}
         </div>
         {% endif %}
         {% endwith %}
 
         <form method="POST">
-            <div class="form-group">
-                <label
-                    style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">Name</label>
-                <input type="text" name="name" class="form-input" placeholder="Admin Name" required>
-            </div>
-            <div class="form-group">
-                <label
-                    style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">Email</label>
-                <input type="email" name="email" class="form-input" placeholder="admin@example.com" required>
-            </div>
-            <div class="form-group">
-                <label
-                    style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">Password</label>
-                <input type="password" name="password" class="form-input" placeholder="Secure Password" required
-                    minlength="8" pattern="(?=.*[!@#$%^&*(),.?\:{}|<>]).{8,}"
-                    title="Must be at least 8 characters and include a special character.">
-            </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+            <label class="form-label">Name</label>
+            <input type="text" name="name" class="minimal-input" placeholder="e.g. Sarah Connor" required>
+
+            <label class="form-label">Email Address</label>
+            <input type="email" name="email" class="minimal-input" placeholder="name@foundify.com" required>
+
+            <label class="form-label">Secure Password</label>
+            <input type="password" name="password" class="minimal-input" placeholder="••••••••" required minlength="8"
+                title="Must be at least 8 characters">
+
+            <button type="submit" class="btn-hope btn-primary"
+                style="width: 100%; padding: 1.2rem; font-size: 1.1rem; margin-top: 1rem; background: var(--text-ink); color: white; border-radius: 50px;">
                 Create Account
             </button>
+
         </form>
 
-        <div style="text-align: center; margin-top: 2rem;">
-            <a href="/superadmin/dashboard" style="color: var(--text-muted); font-size: 0.9rem;">
-                <span class="material-icons" style="font-size: 14px; vertical-align: middle;">arrow_back</span>
-                Back to Dashboard
-            </a>
-        </div>
     </div>
-    </div>
-    <script src="{{ url_for('static', filename='offline.js') }}"></script>
+
+    <script src="{{ url_for('static', filename='js/memories_core.js') }}"></script>
 </body>
 
 </html>

@@ -4,124 +4,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Foundify</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>Sign Up // Foundify</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/auth_sliding.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 
-<body class="split-layout">
-    <div class="split-left fade-in">
-        <div style="margin-bottom: auto;">
-            <div
-                style="display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 2rem; color: var(--text-main);">
-                <img src="/uploads/foundify_logo.png" alt="Foundify Logo" style="height: 48px; width: auto;">
-                Foundify
-            </div>
+<body class="page-signup">
+
+    <div class="auth-container" id="container">
+
+        <!-- LEFT: OVERLAY PANEL -->
+        <div class="overlay-container">
+            <h1 class="overlay-title">Welcome Back!</h1>
+            <p>To keep connected with us please login with your personal info</p>
+            <button class="ghost" id="signIn">Sign In</button>
         </div>
 
-        <div style="max-width: 400px; width: 100%;">
-            <h1 class="text-gradient" style="font-size: 3rem; line-height: 1.2; margin-bottom: 0.5rem;">
-                Join Us
-            </h1>
-            <p style="color: var(--text-muted); margin-bottom: 2rem; font-size: 1.1rem;">
-                Create your account in seconds. You’ll complete your profile after login to unlock reporting features.
-            </p>
-
-            <!-- INFO NOTE -->
-            <div style="background: #FFF7ED; border: 1px solid #FED7AA; color: #9A3412;
-                       padding: 1rem 1.25rem; border-radius: 14px;
-                       margin-bottom: 2rem; font-size: 0.95rem;">
-                <strong>Note:</strong> Profile completion is required before reporting lost or found items.
-            </div>
-
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages() %}
-            {% if messages %}
-            <div
-                style="background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
-                {% for message in messages %}
-                <p style="margin: 0;">{{ message }}</p>
-                {% endfor %}
-            </div>
-            {% endif %}
-            {% endwith %}
-
-            <form method="POST">
-                <div class="form-group">
-                    <label style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">
-                        Full Name
-                    </label>
-                    <input type="text" name="name" class="form-input" placeholder="John Doe" required>
+        <!-- RIGHT: SIGN UP FORM -->
+        <div class="form-container">
+            <form method="POST" action="/signup">
+                <h1 class="form-title">Create Account</h1>
+                <div class="social-container">
+                    <a href="/google-login" class="social"><i class="fab fa-google"></i></a>
+                    <a href="#" class="social"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="social"><i class="fab fa-linkedin-in"></i></a>
                 </div>
+                <span style="font-size: 12px; margin-bottom: 15px; color: #aaa;">or use your email for
+                    registration</span>
 
-                <div class="form-group">
-                    <label style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">
-                        Email Address
-                    </label>
-                    <input type="email" name="email" class="form-input" placeholder="name@example.com" required>
+                <!-- FLASH MESSAGES -->
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <div style="color: #ff6b6b; font-size: 0.9rem; margin-bottom: 1rem;">
+                    {% for message in messages %}
+                    {{ message }}
+                    {% endfor %}
                 </div>
+                {% endif %}
+                {% endwith %}
 
-                <div class="form-group">
-                    <label style="display: block; color: var(--text-main); margin-bottom: 0.75rem; font-weight: 500;">
-                        Password
-                    </label>
-                    <input type="password" name="password" class="form-input" placeholder="Secure Password" required
-                        minlength="8" pattern="(?=.*[!@#$%^&*(),.?\:{}|<>]).{8,}"
-                        title="Must be at least 8 characters and include a special character.">
-                </div>
+                <input type="text" name="name" placeholder="Name" required />
+                <input type="email" name="email" placeholder="Email" required />
+                <input type="password" name="password" placeholder="Password" required />
+                <button type="submit" class="primary">Sign Up</button>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
-                    Create Account
-                </button>
-
-                <div style="text-align: center; margin: 1.5rem 0; position: relative;">
-                    <span
-                        style="background: white; padding: 0 10px; color: var(--text-muted); position: relative; z-index: 1;">OR</span>
-                    <div
-                        style="height: 1px; background: #E2E8F0; position: absolute; top: 50%; left: 0; right: 0; z-index: 0;">
-                    </div>
-                </div>
-
-                <a href="/google-login" class="btn"
-                    style="width: 100%; border: 1px solid #E2E8F0; background: white; color: var(--text-main); display: flex; align-items: center; justify-content: center; gap: 0.75rem; font-weight: 500;">
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" style="width: 20px; height: 20px;">
-                    Sign up with Google
-                </a>
+                <!-- Mobile Toggle -->
+                <a href="/login" class="mobile-toggle">Already have an account? Sign In</a>
             </form>
-
-            <div style="margin-top: 2.5rem; text-align: center; color: var(--text-muted);">
-                Already have an account?
-                <a href="/" style="color: #F6AD55; font-weight: 600;">Sign in</a>
-            </div>
         </div>
-
 
     </div>
 
-    <div class="split-right">
-        <div class="blob blob-1" style="background: #A78BFA; right: auto; left: -10%;"></div>
-        <div class="blob blob-2" style="background: #F6AD55; left: auto; right: -10%;"></div>
-
-        <div class="floating" style="position: relative; z-index: 2; text-align: center; padding: 2rem;">
-            <div style="width: 140px; height: 140px; background: rgba(255,255,255,0.4);
-                       backdrop-filter: blur(20px); border-radius: 40px;
-                       display: flex; align-items: center; justify-content: center;
-                       margin: 0 auto 2.5rem;
-                       box-shadow: 0 20px 40px rgba(0,0,0,0.05);">
-                <span class="material-icons text-gradient" style="font-size: 72px;">
-                    diversity_1
-                </span>
-            </div>
-
-            <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem; color: #2D3748;">
-                Community First
-            </h2>
-            <p style="color: #556; max-width: 450px; font-size: 1.1rem; line-height: 1.8;">
-                Together, we help people recover what matters most by building trust and accountability.
-            </p>
-        </div>
-    </div>
-    <script src="{{ url_for('static', filename='offline.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth_sliding.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mobile_check.js') }}"></script>
 </body>
 
 </html>

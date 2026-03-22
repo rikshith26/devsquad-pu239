@@ -4,243 +4,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Foundify</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Desk // Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/memories.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 </head>
 
-<body class="dashboard-container">
-    <nav class="sidebar">
-        <div
-            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.5rem; color: var(--text-main);">
-            <img src="/uploads/foundify_logo.png" alt="Foundify Logo" style="height: 36px; width: auto;">
-            Foundify Admin
+<body class="layout-compact">
+
+    <aside class="sidebar" style="background: var(--bg-cream); height: 100vh;">
+        <div style="margin-bottom: 2rem;">
+            <div style="font-weight: 700; color: var(--text-ink); font-size: 1.2rem;">Admin Desk</div>
         </div>
 
-        <a href="/admin/dashboard" class="nav-link active">
-            <span class="material-icons">dashboard</span>
-            Overview
-        </a>
-        <a href="/admin/users" class="nav-link">
-            <span class="material-icons">people</span>
-            Users
-        </a>
-        <a href="/admin/settings" class="nav-link">
-            <span class="material-icons">settings</span>
-            Settings
-        </a>
-        <a href="{{ '/superadmin/profile' if session.get('role') == 'super_admin' else '/admin/profile' }}"
-            class="nav-link">
-            <span class="material-icons">account_circle</span>
-            Profile
-        </a>
-
-        <div style="margin-top: auto;">
-            <a href="/logout" class="nav-link" style="color: var(--accent-red);">
-                <span class="material-icons" style="color: var(--accent-red);">logout</span>
-                Logout
+        <nav>
+            <a href="/admin/dashboard" class="sidebar-link active">
+                <span class="material-icons">inbox</span> Inbox / Matches
             </a>
-        </div>
-    </nav>
+            <a href="/admin/users" class="sidebar-link">
+                <span class="material-icons">people</span> Users
+            </a>
+            <a href="/admin/settings" class="sidebar-link">
+                <span class="material-icons">settings</span> Settings
+            </a>
+            <a href="/logout" class="sidebar-link" style="color: var(--accent-rose);">
+                <span class="material-icons">logout</span> Leave Desk
+            </a>
+        </nav>
+    </aside>
 
-    <main class="main-content">
-        <header style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center;">
+    <main class="main-with-sidebar">
+        <header
+            style="margin-bottom: 1.5rem; flex-shrink: 0; display: flex; justify-content: space-between; align-items: flex-end;">
             <div>
-                <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-main);">Overview</h1>
-                <p style="color: var(--text-muted); font-size: 1.1rem;">Manage reports and review AI matches.</p>
+                <h1 style="margin-bottom: 0.2rem; font-size: 1.8rem;">Match Verification</h1>
+                <p style="color: var(--text-pencil); font-size: 0.9rem;">Review the AI's suggestions and reunite items.
+                </p>
             </div>
-            <button class="btn btn-secondary" onclick="window.location.reload()">
-                <span class="material-icons" style="margin-right: 0.5rem;">refresh</span>
-                Refresh
-            </button>
+            <a href="/admin/run-scan" class="btn-hope"
+                style="background: var(--bg-cream); border: 1px solid var(--text-ink); color: var(--text-ink); display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.2rem;">
+                <span class="material-icons" style="font-size: 1.2rem;">radar</span>
+                Run AI Scan
+            </a>
         </header>
 
-        <!-- Stats Row -->
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 4rem;">
-            <div
-                style="padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 2px solid #FFF7ED;">
-                <div onclick="openModal('lostItemsModal')"
-                    style="width: 60px; height: 60px; border-radius: 50%; background: #FFF7ED; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;"
-                    onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                    <span class="material-icons" style="color: #F97316;">assignment</span>
-                </div>
-                <div>
-                    <h3 style="font-size: 2.5rem; line-height: 1; margin-bottom: 0;">{{ lost_items|length }}</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">Lost Items</p>
-                </div>
-            </div>
+        {% if matches %}
+        <div class="scroll-panel" style="flex: 1; padding-bottom: 2rem;">
 
+            <!-- Header for List -->
             <div
-                style="padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 2px solid #F0FDF4;">
-                <div onclick="openModal('foundItemsModal')"
-                    style="width: 60px; height: 60px; border-radius: 50%; background: #F0FDF4; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;"
-                    onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                    <span class="material-icons" style="color: #10B981;">check_circle</span>
-                </div>
-                <div>
-                    <h3 style="font-size: 2.5rem; line-height: 1; margin-bottom: 0;">{{ found_items|length }}</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">Found Items</p>
-                </div>
-            </div>
-
-            <div
-                style="padding: 1.5rem; display: flex; align-items: center; gap: 1.5rem; border-bottom: 2px solid #FFFBEB;">
-                <div onclick="document.getElementById('match-verification').scrollIntoView({behavior: 'smooth'})"
-                    style="width: 60px; height: 60px; border-radius: 50%; background: #FFFBEB; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s;"
-                    onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                    <span class="material-icons" style="color: #F59E0B;">pending</span>
-                </div>
-                <div>
-                    <h3 style="font-size: 2.5rem; line-height: 1; margin-bottom: 0;">{{ matches|length }}</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem;">Pending Matches</p>
-                </div>
-            </div>
-        </div>
-
-        <h2 id="match-verification" style="font-size: 1.75rem; margin-bottom: 1.5rem;">AI Match Verification</h2>
-
-        <div class="fade-in">
-            <!-- Headers -->
-            <div
-                style="display: grid; grid-template-columns: 80px 80px 2fr 1fr; gap: 2rem; padding: 0 1.5rem 1rem; color: var(--text-muted); font-size: 0.9rem; font-weight: 500;">
-                <div>Lost</div>
-                <div>Found</div>
+                style="display: grid; grid-template-columns: 1.5fr 3fr 2fr 1.5fr; gap: 1rem; padding: 0 1.5rem; margin-bottom: 0.5rem; color: var(--text-pencil); font-size: 0.85rem; font-weight: 600;">
+                <div>Lost & Found</div>
                 <div>Details & Confidence</div>
-                <div>Action</div>
+                <div style="text-align: center;">AI Analysis</div>
+                <div style="text-align: right;">Action</div>
             </div>
 
-            {% for match in matches %}
-            <div class="match-card"
-                style="background: white; border-radius: 24px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); display: flex; align-items: center; justify-content: space-between; gap: 2rem;">
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                {% for match in matches %}
+                <div class="match-row"
+                    style="background: white; border-radius: 16px; padding: 1rem 1.5rem; display: grid; grid-template-columns: 1.5fr 3fr 2fr 1.5fr; gap: 1rem; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; transition: transform 0.2s ease;">
 
-                <!-- Left: Images -->
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <img src="/{{ match.lost.image_path }}"
-                        style="width: 80px; height: 80px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <img src="/{{ match.found.image_path }}"
-                        style="width: 80px; height: 80px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                </div>
-
-                <!-- Middle: Text Details -->
-                <div style="flex: 1;">
-                    <h4 style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); margin-bottom: 0.25rem;">
-                        {{ match.lost.item_name }}
-                    </h4>
-                    <p style="color: #94A3B8; font-size: 1rem; margin: 0; font-weight: 500;">
-                        Match found in "{{ match.found.location }}"
-                    </p>
-                </div>
-
-                <!-- Right: Metrics & Action -->
-                <div style="display: flex; align-items: center; gap: 2.5rem;">
-
-                    <!-- Confidence Rings -->
-                    <div style="display: flex; gap: 1rem;">
-                        <!-- Text Score (Orange) -->
-                        <div class="confidence-ring" title="Text Match: {{ match.score.text_score }}%"
-                            style="width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem;
-                                    background: conic-gradient(#F59E0B {{ match.score.text_score }}%, #F3F4F6 0%); color: white; position: relative;">
+                    <!-- IMAGES (Side by Side) -->
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="position: relative; width: 50px; height: 50px;">
+                            <img src="/{{ match.lost.image_path }}"
+                                style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                             <div
-                                style="position: absolute; width: 40px; height: 40px; background: white; border-radius: 50%;">
-                            </div>
-                            <span style="position: relative; color: #F59E0B;">{{ match.score.text_score | int }}</span>
+                                style="position: absolute; top: -5px; left: -5px; background: var(--accent-rose); color: white; font-size: 0.6rem; padding: 2px 4px; border-radius: 4px;">
+                                Lost</div>
                         </div>
-
-                        <!-- Image Score (Green) -->
-                        <div class="confidence-ring" title="Image Match: {{ match.score.image_score }}%"
-                            style="width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem;
-                                    background: conic-gradient(#10B981 {{ match.score.image_score }}%, #F3F4F6 0%); color: white; position: relative;">
+                        <div style="width: 20px; height: 2px; background: #ddd;"></div>
+                        <div style="position: relative; width: 50px; height: 50px;">
+                            <img src="/{{ match.found.image_path }}"
+                                style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                             <div
-                                style="position: absolute; width: 40px; height: 40px; background: white; border-radius: 50%;">
-                            </div>
-                            <span style="position: relative; color: #10B981;">{{ match.score.image_score | int }}</span>
+                                style="position: absolute; top: -5px; right: -5px; background: var(--accent-mint); color: white; font-size: 0.6rem; padding: 2px 4px; border-radius: 4px;">
+                                Found</div>
                         </div>
                     </div>
 
-                    <!-- Approve Button -->
-                    <a href="/admin/approve-match/{{ match.lost.lost_id }}/{{ match.found.found_id }}"
-                        style="background: linear-gradient(90deg, #FB923C 0%, #EC4899 100%); color: white; padding: 0.75rem 2.5rem; border-radius: 99px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); transition: transform 0.2s;"
-                        onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                        Approve
-                    </a>
-                </div>
+                    <!-- TEXT INFO -->
+                    <div>
+                        <h3 style="font-size: 1.1rem; margin-bottom: 0.2rem; color: var(--text-ink);">{{
+                            match.lost.item_name }}</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-pencil); margin: 0;">
+                            Match found in "{{ match.found.location }}"<br>
+                            <span style="font-size: 0.75rem; color: #bababa;">{{ match.lost.created_at.strftime('%b %d')
+                                if match.lost.created_at }} vs {{ match.found.created_at.strftime('%b %d') if
+                                match.found.created_at }}</span>
+                        </p>
+                    </div>
 
+                    <!-- SCORES (Circles) -->
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 1.5rem;">
+                        <!-- Overall Score -->
+                        <div
+                            style="position: relative; width: 45px; height: 45px; border-radius: 50%; background: conic-gradient(var(--accent-gold) {{ match.score.final_score }}%, #eee 0%); display: flex; align-items: center; justify-content: center;">
+                            <div
+                                style="width: 35px; height: 35px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; color: var(--accent-gold);">
+                                {{ match.score.final_score }}%
+                            </div>
+                        </div>
+
+                        <!-- Visual Score (Mini) -->
+                        <div style="display: flex; flex-direction: column; gap: 2px;">
+                            <div class="mini-stat"
+                                style="display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--text-pencil);">
+                                <span
+                                    style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-sky);"></span>
+                                Vis: {{ match.score.image_score }}%
+                            </div>
+                            <div class="mini-stat"
+                                style="display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--text-pencil);">
+                                <span
+                                    style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-rose);"></span>
+                                Txt: {{ match.score.text_score }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ACTION BUTTON -->
+                    <div style="text-align: right;">
+                        <a href="/admin/approve-match/{{ match.lost.lost_id }}/{{ match.found.found_id }}"
+                            class="btn-approve"
+                            style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); color: white; padding: 0.7rem 2rem; border-radius: 30px; font-weight: 600; text-decoration: none; box-shadow: 0 4px 10px rgba(255, 94, 98, 0.3); display: inline-block; transition: all 0.2s;">
+                            Approve
+                        </a>
+                    </div>
+
+                </div>
+                {% endfor %}
             </div>
-            {% else %}
-            <div style="text-align: center; padding: 6rem; background: white; border-radius: 24px;">
-                <span class="material-icons" style="font-size: 48px; color: #CBD5E1; margin-bottom: 1rem;">inbox</span>
-                <p style="color: var(--text-muted);">All caught up! No pending matches.</p>
-            </div>
-            {% endfor %}
         </div>
+        {% else %}
+        <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+            <div class="paper-card" style="text-align: center; padding: 3rem; max-width: 400px;">
+                <span class="material-icons" style="font-size: 4rem; color: #eee; margin-bottom: 1rem;">done_all</span>
+                <h2 style="color: #ccc; font-size: 1.5rem;">All Caught Up</h2>
+                <p style="color: #ccc;">No pending verifications on your desk.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Reports Section Removed by Admin Request -->
+
     </main>
 
-    <!-- Lost Items Modal -->
-    <div id="lostItemsModal" class="modal-overlay" style="display: none;"
-        onclick="if(event.target === this) closeModal('lostItemsModal')">
-        <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
-            <span onclick="closeModal('lostItemsModal')" class="close-btn">&times;</span>
-            <h2 style="margin-bottom: 1.5rem; color: var(--text-main);">All Lost Items</h2>
-
-            {% if lost_items %}
-            <div style="display: grid; gap: 1rem;">
-                {% for item in lost_items %}
-                <div
-                    style="display: flex; gap: 1rem; align-items: center; padding: 1rem; background: #F8FAFC; border-radius: 12px;">
-                    <img src="/{{ item.image_path }}"
-                        style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;">
-                    <div style="flex: 1;">
-                        <h4 style="margin: 0; font-size: 1rem;">{{ item.item_name }}</h4>
-                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">{{ item.location }} • {{
-                            item.date }}</p>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p style="color: var(--text-muted); text-align: center;">No lost items reported.</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Found Items Modal -->
-    <div id="foundItemsModal" class="modal-overlay" style="display: none;"
-        onclick="if(event.target === this) closeModal('foundItemsModal')">
-        <div class="modal-content" style="max-width: 800px; max-height: 80vh; overflow-y: auto;">
-            <span onclick="closeModal('foundItemsModal')" class="close-btn">&times;</span>
-            <h2 style="margin-bottom: 1.5rem; color: var(--text-main);">All Found Items</h2>
-
-            {% if found_items %}
-            <div style="display: grid; gap: 1rem;">
-                {% for item in found_items %}
-                <div
-                    style="display: flex; gap: 1rem; align-items: center; padding: 1rem; background: #F8FAFC; border-radius: 12px;">
-                    <img src="/{{ item.image_path }}"
-                        style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;">
-                    <div style="flex: 1;">
-                        <h4 style="margin: 0; font-size: 1rem;">{{ item.item_name }}</h4>
-                        <p style="margin: 0; font-size: 0.85rem; color: var(--text-muted);">{{ item.location }} • {{
-                            item.date }}</p>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p style="color: var(--text-muted); text-align: center;">No found items reported.</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <script>
-        function openModal(id) {
-            document.getElementById(id).style.display = 'flex';
-        }
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
-        }
-    </script>
-    <script src="{{ url_for('static', filename='auth_check.js') }}"></script>
-    <script src="{{ url_for('static', filename='offline.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/memories_core.js') }}"></script>
 </body>
 
 </html>

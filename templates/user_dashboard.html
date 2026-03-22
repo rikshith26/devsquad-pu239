@@ -4,101 +4,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Foundify</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Dashboard // Foundify</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/memories.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* STATIC CARD (No Animation, No Gradient) */
+        .paper-card-static {
+            background: white;
+            border-radius: var(--radius-soft);
+            padding: 2rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            position: relative;
+            overflow: hidden;
+            transition: none !important;
+            transform: none !important;
+        }
+    </style>
 </head>
 
-<body class="dashboard-container">
-    <nav class="sidebar">
-        <div
-            style="margin-bottom: 3rem; display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.5rem; color: var(--text-main);">
-            <img src="/uploads/foundify_logo.png" alt="Foundify Logo" style="height: 36px; width: auto;">
-            Foundify
+<body class="layout-compact">
+    {% include 'loader.html' %}
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" style="height: 100vh;">
+        <div style="margin-bottom: 2rem;">
+            <img src="/uploads/foundify_logo.png" alt="Foundify" style="height: 36px;">
+            <div
+                style="font-weight: 700; font-size: 1.1rem; display: inline-block; vertical-align: middle; margin-left: 0.5rem;">
+                Foundify</div>
         </div>
 
-        <a href="/user/dashboard" class="nav-link active">
-            <span class="material-icons">dashboard</span>
-            Dashboard
-        </a>
-        <a href="/user/report-lost" class="nav-link">
-            <span class="material-icons">search_off</span>
-            Report Lost
-        </a>
-        <a href="/user/report-found" class="nav-link">
-            <span class="material-icons">travel_explore</span>
-            Report Found
-        </a>
-        <a href="/user/chats" class="nav-link">
-            <span class="material-icons">chat</span>
-            Messages
-        </a>
-        <a href="/user/history" class="nav-link">
-            <span class="material-icons">history</span>
-            History
-        </a>
+        <nav>
+            <a href="/user/dashboard" class="sidebar-link active">
+                <span class="material-icons">dashboard</span> Dashboard
+            </a>
+            <a href="/user/report-lost" class="sidebar-link">
+                <span class="material-icons">search_off</span> I Lost Something
+            </a>
+            <a href="/user/report-found" class="sidebar-link">
+                <span class="material-icons">volunteer_activism</span> I Found Something
+            </a>
+            <a href="/user/chats" class="sidebar-link">
+                <span class="material-icons">mark_email_unread</span> Messages
+            </a>
+            <a href="/user/history" class="sidebar-link">
+                <span class="material-icons">history_edu</span> History
+            </a>
+            <!-- Removed 'Your Account' link from sidebar as per user preference for top-right access -->
+        </nav>
 
         <div style="margin-top: auto;">
-            <a href="/logout" class="nav-link" style="color: var(--accent-red);">
-                <span class="material-icons" style="color: var(--accent-red);">logout</span>
-                Logout
+            <a href="/logout" class="sidebar-link" style="color: var(--accent-rose);">
+                <span class="material-icons">logout</span> Logout
             </a>
         </div>
-    </nav>
+    </aside>
 
-    <main class="main-content">
-        <header style="margin-bottom: 3rem; display: flex; justify-content: space-between; align-items: center;">
+    <!-- MAIN CONTENT -->
+    <main class="main-with-sidebar">
+
+        <!-- Header -->
+        <header
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-shrink: 0;">
             <div>
-                <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-main);">
-                    Hello, {{ user.name }}!
-                </h1>
-                <p style="color: var(--text-muted); font-size: 1.1rem;">
-                    Here's to finding what matters most.
-                </p>
+                <h1 style="margin-bottom: 0.2rem; font-size: 1.8rem;">Hello, <span class="highlight-peach">{{ user.name
+                        }}</span></h1>
+                <p style="color: var(--text-pencil); font-size: 0.9rem;">Ready to help the community today?</p>
             </div>
 
             <div style="display: flex; gap: 1rem; align-items: center;">
-                <!-- Notification Bell -->
-                <div class="notification-container" style="position: relative;">
-                    <div onclick="toggleNotifications()"
-                        style="cursor: pointer; width: 48px; height: 48px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-soft); position: relative;">
-                        <span class="material-icons" style="color: var(--text-muted);">notifications</span>
-                        <span id="notification-badge"
-                            style="position: absolute; top: -5px; right: -5px; background: #EF4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; display: none;">
-                            0
-                        </span>
-                    </div>
-
-                    <!-- Dropdown -->
-                    <div id="notification-dropdown"
-                        style="display: none; position: absolute; top: 60px; right: 0; width: 360px; background: white; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); z-index: 1000; overflow: hidden; border: 1px solid rgba(0,0,0,0.05); animation: slideDown 0.2s ease-out;">
-                        <div
-                            style="padding: 1.25rem; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);">
-                            <h4 style="margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--text-main);">
-                                Notifications</h4>
-                        </div>
-                        <div id="notification-list" style="max-height: 400px; overflow-y: auto;">
-                            <!-- Items injected by JS -->
-                            <div style="padding: 3rem 1rem; text-align: center; color: var(--text-muted);">
-                                <span class="material-icons"
-                                    style="font-size: 48px; opacity: 0.3; margin-bottom: 1rem;">notifications_off</span>
-                                <p style="margin: 0;">No notifications yet</p>
-                            </div>
-                        </div>
-                    </div>
+                <div
+                    style="background: white; padding: 0.5rem 1rem; border-radius: var(--radius-round); box-shadow: var(--shadow-soft); font-size: 0.9rem;">
+                    <span class="material-icons"
+                        style="vertical-align: middle; color: var(--accent-mint); font-size: 1.2rem;">energy_savings_leaf</span>
+                    <span style="font-weight: 700;">{{ leaderboard|length }}</span> Helpers
                 </div>
 
-                <!-- USER AVATAR -->
-                <a href="/user/profile" title="View Profile">
+                <!-- PROFILE LINK (Top Right "Letter") -->
+                <a href="/user/profile" style="text-decoration: none;">
                     {% if user.profile_photo %}
                     <img src="/{{ user.profile_photo }}"
-                        style="width:48px;height:48px;border-radius:50%;object-fit:cover;box-shadow:var(--shadow-soft);">
+                        style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: var(--shadow-soft);">
                     {% else %}
-                    <div style="width:48px;height:48px;border-radius:50%;
-                                   background: var(--primary-gradient);
-                                   display:flex;align-items:center;justify-content:center;
-                                   color:white;font-weight:700;
-                                   box-shadow: 0 5px 15px rgba(246, 173, 85, 0.4);">
+                    <div
+                        style="width: 40px; height: 40px; background: var(--accent-peach); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; border: 2px solid white; box-shadow: var(--shadow-soft);">
                         {{ user.name[0] }}
                     </div>
                     {% endif %}
@@ -106,91 +96,162 @@
             </div>
         </header>
 
-        <section
-            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin-bottom: 4rem;">
+        <!-- DASHBOARD CONTENT (Leaderboard Removed) -->
+        <div style="flex: 1; min-height: 0; display: flex; flex-direction: column;">
 
-            <!-- Lost Card -->
-            <div class="fade-in"
-                style="animation-delay: 0.1s; padding: 2rem; border-radius: 24px; border: 2px dashed #FED7AA; transition: all 0.3s ease; background: rgba(255, 255, 255, 0.4);">
-                <div
-                    style="width: 64px; height: 64px; border-radius: 20px; background: #FFF7ED; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
-                    <span class="material-icons" style="font-size: 32px; color: #F97316;">search_off</span>
+            <div class="scroll-panel" style="display: flex; flex-direction: column; gap: 1rem; height: 100%;">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+
+                    <a href="/user/report-lost" class="paper-card-static"
+                        style="text-decoration: none; display: flex; flex-direction: column; align-items: flex-start; border-left: 6px solid var(--accent-rose); text-align: left; padding: 1.5rem; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div
+                                style="background: rgba(255, 107, 107, 0.1); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <span class="material-icons"
+                                    style="font-size: 1.8rem; color: var(--accent-rose);">search_off</span>
+                            </div>
+                            <div>
+                                <h2 style="margin: 0; font-size: 1.2rem; color: var(--text-ink);">Report Loss</h2>
+                                <p style="color: var(--text-pencil); font-size: 0.9rem; margin: 0;">Create a missing
+                                    item poster.</p>
+                            </div>
+                        </div>
+
+                        <div class="btn-hope btn-primary"
+                            style="width: 100%; font-size: 0.9rem; margin-top: 0.5rem; min-height: 48px;">Lost
+                            Something?
+                        </div>
+                    </a>
+
+                    <a href="/user/report-found" class="paper-card-static"
+                        style="text-decoration: none; display: flex; flex-direction: column; align-items: flex-start; border-left: 6px solid var(--accent-mint); text-align: left; padding: 1.5rem; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div
+                                style="background: rgba(29, 209, 161, 0.1); width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <span class="material-icons"
+                                    style="font-size: 1.8rem; color: var(--accent-mint);">travel_explore</span>
+                            </div>
+                            <div>
+                                <h2 style="margin: 0; font-size: 1.2rem; color: var(--text-ink);">Report Find</h2>
+                                <p style="color: var(--text-pencil); font-size: 0.9rem; margin: 0;">Log an item you’ve
+                                    found.</p>
+                            </div>
+                        </div>
+
+                        <div class="btn-hope btn-primary"
+                            style="width: 100%; font-size: 0.9rem; background: var(--accent-mint); margin-top: 0.5rem; min-height: 48px;">
+                            Found Something?</div>
+                    </a>
+
                 </div>
-                <h3>I lost something</h3>
-                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Upload a photo or describe your item.</p>
-                <a href="/user/report-lost" class="btn btn-primary" style="box-shadow: none;">Start Search</a>
+
             </div>
 
-            <!-- Found Card -->
-            <div class="fade-in"
-                style="animation-delay: 0.2s; padding: 2rem; border-radius: 24px; border: 2px dashed #A78BFA; transition: all 0.3s ease; background: rgba(255, 255, 255, 0.4);">
-                <div
-                    style="width: 64px; height: 64px; border-radius: 20px; background: #F5F3FF; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
-                    <span class="material-icons" style="font-size: 32px; color: #8B5CF6;">travel_explore</span>
-                </div>
-                <h3>I found something</h3>
-                <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Help someone by reporting a found item.</p>
-                <a href="/user/report-found" class="btn btn-secondary"
-                    style="border: none; background: #8B5CF6; color: white;">Report Found</a>
-            </div>
-        </section>
-
-        <!-- Leaderboard -->
-        {% if leaderboard %}
-        <section style="margin-bottom: 4rem;">
-            <h2 style="font-size: 1.5rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-                <span class="material-icons" style="color: #F59E0B;">emoji_events</span>
-                Top Campus Finders
-            </h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
-                {% for hero in leaderboard %}
-                <div
-                    style="background: white; padding: 1.5rem; border-radius: 16px; display: flex; align-items: center; gap: 1rem; box-shadow: var(--shadow-sm); border: 1px solid #F1F5F9;">
-                    <div style="position: relative;">
-                        {% if hero.photo %}
-                        <img src="/{{ hero.photo }}"
-                            style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
-                        {% else %}
-                        <div
-                            style="width: 50px; height: 50px; border-radius: 50%; background: #FDE68A; color: #D97706; display: flex; align-items: center; justify-content: center; font-weight: 700;">
-                            {{ hero.name[0] }}
-                        </div>
-                        {% endif %}
-
-                        <!-- Rank Badge -->
-                        <div
-                            style="position: absolute; -top: 4px; -right: 4px; width: 20px; height: 20px; background: #EF4444; color: white; border-radius: 50%; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; font-weight: 700; border: 2px solid white;">
-                            {{ loop.index }}
-                        </div>
-                    </div>
-                    <div>
-                        <h4 style="margin: 0; font-size: 1rem;">{{ hero.name }}</h4>
-                        <p style="margin: 0; color: #10B981; font-weight: 500; font-size: 0.9rem;">
-                            {{ hero.count }} Items Returned
-                        </p>
+            <!-- NEW: Premium Top Heroes -->
+            <div style="margin-top: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem;">
+                    <h3 style="font-size: 1.2rem; color: var(--text-main); margin: 0;">Top Heroes</h3>
+                    <div style="font-size: 0.85rem; color: var(--text-pencil); font-style: italic;">
+                        Join the Hall of Fame by returning lost items!
                     </div>
                 </div>
-                {% endfor %}
+
+                {% if leaderboard %}
+                <div class="paper-card-static" style="padding: 0; overflow: hidden; border: none;">
+                    <!-- Hide gradient for this list -->
+                    <style>
+                        .paper-card::before {
+                            display: none !important;
+                        }
+                    </style>
+                    {% for helper in leaderboard[:3] %}
+                    <div
+                        style="display: flex; align-items: center; padding: 1rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,0.05);">
+                        <div
+                            style="font-weight: 900; font-size: 1.5rem; width: 40px; color: {% if loop.index == 1 %}#FFD700{% elif loop.index == 2 %}#C0C0C0{% else %}#CD7F32{% endif %}; text-shadow: 1px 1px 0 rgba(0,0,0,0.1);">
+                            #{{ loop.index }}
+                        </div>
+
+                        <!-- Avatar -->
+                        <div style="position: relative; margin-right: 1.5rem;">
+                            {% if helper.photo %}
+                            <img src="/{{ helper.photo }}"
+                                style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: var(--shadow-soft);">
+                            {% else %}
+                            <div
+                                style="width: 50px; height: 50px; background: var(--accent-peach); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.2rem; border: 2px solid white; box-shadow: var(--shadow-soft);">
+                                {{ helper.name[0] }}
+                            </div>
+                            {% endif %}
+                            {% if loop.index == 1 %}
+                            <span class="material-icons"
+                                style="position: absolute; top: -10px; right: -5px; color: #FFD700; font-size: 1.2rem; transform: rotate(15deg);">emoji_events</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Info -->
+                        <div style="flex: 1;">
+                            <div style="font-size: 1rem; font-weight: 700; color: var(--text-ink);">{{ helper.name }}
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-pencil);">Community Hero</div>
+                        </div>
+
+                        <!-- Score -->
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.2rem; font-weight: 800; color: var(--accent-mint);">{{ helper.count
+                                }}</div>
+                            <div
+                                style="font-size: 0.75rem; color: var(--text-pencil); text-transform: uppercase; letter-spacing: 0.5px;">
+                                Returns</div>
+                        </div>
+
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="paper-card"
+                    style="padding: 2rem; text-align: center; display: flex; flex-direction: column; align-items: center;">
+                    <div
+                        style="background: rgba(0,0,0,0.03); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+                        <span class="material-icons" style="font-size: 2rem; color: #ccc;">emoji_events</span>
+                    </div>
+                    <h4 style="margin: 0 0 0.5rem 0; color: var(--text-ink);">No Heroes Yet</h4>
+                    <p style="color: var(--text-pencil); margin: 0; font-size: 0.9rem;">Return an item to claim the #1
+                        spot!</p>
+                </div>
+                {% endif %}
             </div>
-        </section>
-        {% endif %}
+
+        </div>
+
+        </div>
+
+        </div>
 
     </main>
 
-    <!-- Floating Chat Button -->
-    <a href="/user/chats"
-        style="position: fixed; bottom: 2rem; right: 2rem; width: 64px; height: 64px; border-radius: 50%; background: var(--secondary-gradient); box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.5); display: flex; align-items: center; justify-content: center; color: white; transition: transform 0.2s, box-shadow 0.2s; z-index: 100;"
-        onmouseover="this.style.transform='scale(1.1) translateY(-4px)'"
-        onmouseout="this.style.transform='scale(1) translateY(0)'">
-        <span class="material-icons" style="font-size: 32px;">chat</span>
-        <!-- Notification Dot -->
-        <span
-            style="position: absolute; top: 0; right: 0; width: 16px; height: 16px; background: #EF4444; border-radius: 50%; border: 3px solid white;"></span>
-    </a>
 
-    <script src="{{ url_for('static', filename='auth_check.js') }}"></script>
-    <script src="{{ url_for('static', filename='notifications.js') }}"></script>
-    <script src="{{ url_for('static', filename='offline.js') }}"></script>
+    <!-- MOBILE BOTTOM NAV -->
+    <div class="mobile-nav">
+        <a href="/user/dashboard" class="mobile-nav-link active">
+            <span class="material-icons">dashboard</span>
+            Dashboard
+        </a>
+        <a href="/user/chats" class="mobile-nav-link">
+            <span class="material-icons">mark_email_unread</span>
+            Chats
+        </a>
+        <a href="/user/profile" class="mobile-nav-link">
+            <span class="material-icons">account_circle</span>
+            Profile
+        </a>
+        <a href="/user/history" class="mobile-nav-link">
+            <span class="material-icons">history_edu</span>
+            History
+        </a>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/memories_core.js') }}"></script>
 </body>
 
 </html>

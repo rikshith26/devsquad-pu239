@@ -2,6 +2,8 @@ import cv2
 import numpy as np
 import spacy
 import re
+import os
+from flask import current_app
 
 # Load Pre-trained Deep Learning NLP Model
 # 'en_core_web_sm' is a small English pipeline trained on web text
@@ -42,10 +44,22 @@ def text_similarity(text1, text2):
 # ---------- COLOR SIMILARITY (HSV Histograms) ----------
 def color_similarity(img1_path, img2_path):
     try:
+        # Resolve absolute paths if in Flask context
+        if current_app:
+             if not os.path.isabs(img1_path):
+                 img1_path = os.path.join(current_app.root_path, img1_path)
+             if not os.path.isabs(img2_path):
+                 img2_path = os.path.join(current_app.root_path, img2_path)
+
+        # print(f"DEBUG: Loading images for Color Sim: {img1_path} vs {img2_path}")
         img1 = cv2.imread(img1_path)
         img2 = cv2.imread(img2_path)
         
-        if img1 is None or img2 is None:
+        if img1 is None:
+            print(f"DEBUG: Failed to load img1: {img1_path}")
+            return 0.0
+        if img2 is None:
+            print(f"DEBUG: Failed to load img2: {img2_path}")
             return 0.0
             
         hsv1 = cv2.cvtColor(img1, cv2.COLOR_BGR2HSV)
@@ -67,10 +81,22 @@ def color_similarity(img1_path, img2_path):
 # ---------- STRUCTURAL SIMILARITY (ORB) ----------
 def image_similarity(img1_path, img2_path):
     try:
+        # Resolve absolute paths if in Flask context
+        if current_app:
+             if not os.path.isabs(img1_path):
+                 img1_path = os.path.join(current_app.root_path, img1_path)
+             if not os.path.isabs(img2_path):
+                 img2_path = os.path.join(current_app.root_path, img2_path)
+
+        # print(f"DEBUG: Loading images for ORB Sim: {img1_path} vs {img2_path}")
         img1 = cv2.imread(img1_path, 0)
         img2 = cv2.imread(img2_path, 0)
 
-        if img1 is None or img2 is None:
+        if img1 is None:
+            print(f"DEBUG: Failed to load img1 (ORB): {img1_path}")
+            return 0.0
+        if img2 is None:
+            print(f"DEBUG: Failed to load img2 (ORB): {img2_path}")
             return 0.0
 
         orb = cv2.ORB_create(nfeatures=5000)
