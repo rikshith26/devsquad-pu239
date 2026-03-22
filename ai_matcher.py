@@ -41,25 +41,40 @@ def text_similarity(text1, text2):
     except:
         return 0.0
 
+# ---------- CV2 DB IMAGE LOADER ----------
+def load_image_cv2(img_path, flags=cv2.IMREAD_COLOR):
+    if img_path.startswith("db_uploads/"):
+        file_id = img_path.split("/")[1]
+        try:
+            from app import get_db
+            import gridfs
+            from bson.objectid import ObjectId
+            
+            db = get_db()
+            fs = gridfs.GridFS(db)
+            grid_out = fs.get(ObjectId(file_id))
+            img_array = np.asarray(bytearray(grid_out.read()), dtype=np.uint8)
+            return cv2.imdecode(img_array, flags)
+        except Exception as e:
+            print(f"Error loading img from DB: {e}")
+            return None
+    else:
+        if current_app:
+             if not os.path.isabs(img_path):
+                 img_path = os.path.join(current_app.root_path, img_path)
+        return cv2.imread(img_path, flags)
+
 # ---------- COLOR SIMILARITY (HSV Histograms) ----------
 def color_similarity(img1_path, img2_path):
     try:
-        # Resolve absolute paths if in Flask context
-        if current_app:
-             if not os.path.isabs(img1_path):
-                 img1_path = os.path.join(current_app.root_path, img1_path)
-             if not os.path.isabs(img2_path):
-                 img2_path = os.path.join(current_app.root_path, img2_path)
-
-        # print(f"DEBUG: Loading images for Color Sim: {img1_path} vs {img2_path}")
-        img1 = cv2.imread(img1_path)
-        img2 = cv2.imread(img2_path)
+        img1 = load_image_cv2(img1_path, cv2.IMREAD_COLOR)
+        img2 = load_image_cv2(img2_path, cv2.IMREAD_COLOR)
         
         if img1 is None:
-            print(f"DEBUG: Failed to load img1: {img1_path}")
+            # print(f"DEBUG: Failed to load img1: {img1_path}")
             return 0.0
         if img2 is None:
-            print(f"DEBUG: Failed to load img2: {img2_path}")
+            # print(f"DEBUG: Failed to load img2: {img2_path}")
             return 0.0
             
         hsv1 = cv2.cvtColor(img1, cv2.COLOR_BGR2HSV)
@@ -81,22 +96,14 @@ def color_similarity(img1_path, img2_path):
 # ---------- STRUCTURAL SIMILARITY (ORB) ----------
 def image_similarity(img1_path, img2_path):
     try:
-        # Resolve absolute paths if in Flask context
-        if current_app:
-             if not os.path.isabs(img1_path):
-                 img1_path = os.path.join(current_app.root_path, img1_path)
-             if not os.path.isabs(img2_path):
-                 img2_path = os.path.join(current_app.root_path, img2_path)
-
-        # print(f"DEBUG: Loading images for ORB Sim: {img1_path} vs {img2_path}")
-        img1 = cv2.imread(img1_path, 0)
-        img2 = cv2.imread(img2_path, 0)
+        img1 = load_image_cv2(img1_path, 0)
+        img2 = load_image_cv2(img2_path, 0)
 
         if img1 is None:
-            print(f"DEBUG: Failed to load img1 (ORB): {img1_path}")
+            # print(f"DEBUG: Failed to load img1 (ORB): {img1_path}")
             return 0.0
         if img2 is None:
-            print(f"DEBUG: Failed to load img2 (ORB): {img2_path}")
+            # print(f"DEBUG: Failed to load img2 (ORB): {img2_path}")
             return 0.0
 
         orb = cv2.ORB_create(nfeatures=5000)

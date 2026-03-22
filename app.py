@@ -239,14 +239,35 @@ def get_user_by_id(user_id_str):
     except:
         return None
 
-# ---------- SERVE UPLOADS ----------
+# ---------- SERVE UPLOADS (LOCAL) ----------
 from urllib.parse import unquote
+import gridfs
+from io import BytesIO
+
 @app.route("/uploads/<path:filename>")
 def uploaded_files(filename):
     filename = unquote(filename)
     return send_from_directory("uploads", filename)
 
-@app.route("/")
+# ---------- SERVE UPLOADS (DATABASE) ----------
+@app.route("/db_uploads/<file_id>")
+def serve_db_upload(file_id):
+    try:
+        db = get_db()
+        if db is None:
+            abort(500)
+            
+        fs = gridfs.GridFS(db)
+        grid_out = fs.get(ObjectId(file_id))
+        
+        response = make_response(grid_out.read())
+        response.mimetype = grid_out.content_type
+        # Add cache headers since DB images are immutable
+        response.headers['Cache-Control'] = 'public, max-age=31536000'
+        return response
+    except Exception as e:
+        print(f"Error serving DB image: {e}")
+        return send_from_directory('static', 'images/default_item.png')
 def index():
     if "user_id" in session:
         db = get_db()
@@ -512,11 +533,9 @@ def user_profile():
 
         if photo and photo.filename:
             # Generate unique filename to prevent caching
-            timestamp = int(datetime.datetime.utcnow().timestamp())
-            filename = f"{user_id}_{timestamp}_{photo.filename}"
-            photo_path = f"uploads/profile/{filename}"
-            photo.save(photo_path)
-            update_data["profile_photo"] = photo_path
+            db_path = save_image(photo, "profile")
+            if db_path:
+                update_data["profile_photo"] = db_path
 
         db.users.update_one(
             {"_id": ObjectId(user_id)},
@@ -669,11 +688,9 @@ def handle_profile_update(role, template_name, redirect_url):
 
         if photo and photo.filename:
             # Generate unique filename to prevent caching
-            timestamp = int(datetime.datetime.utcnow().timestamp())
-            filename = f"{user_id}_{timestamp}_{photo.filename}"
-            photo_path = f"uploads/profile/{filename}"
-            photo.save(photo_path)
-            update_data["profile_photo"] = photo_path
+            db_path = save_image(photo, "profile")
+            if db_path:
+                update_data["profile_photo"] = db_path
 
         db.users.update_one(
             {"_id": ObjectId(user_id)},
@@ -705,27 +722,34 @@ def profile_complete():
     user = db.users.find_one({"_id": ObjectId(session["user_id"])})
     return user.get("profile_completed", False) if user else False
 
-# ---------- HELPER: SAVE IMAGE ----------
+# ---------- HELPER: SAVE IMAGE TO DATABASE ----------
 def save_image(file, folder):
     if not file or file.filename == '':
         return None
     
     filename = secure_filename(file.filename)
     name, ext = os.path.splitext(filename)
-    
-    # Generate unique filename
-    unique_filename = f"{session.get('user_id')}_{int(datetime.datetime.now().timestamp())}_{name}.jpg" # Always save as .jpg
-    filepath = os.path.join("uploads", folder, unique_filename) # Relative path
-    abs_filepath = os.path.join(app.root_path, filepath) # Absolute path
+    unique_filename = f"{session.get('user_id')}_{int(datetime.datetime.now().timestamp())}_{name}.jpg" 
     
     try:
-        # Open image (handles HEIC thanks to register_heif_opener)
         image = Image.open(file)
-        image = image.convert('RGB') # Convert to RGB (handles RGBA, P, etc for JPEG)
-        image.save(abs_filepath, "JPEG", quality=85)
-        return filepath.replace("\\", "/") # Return relative path with forward slashes
+        image = image.convert('RGB')
+        
+        # Save to BytesIO
+        img_byte_arr = BytesIO()
+        image.save(img_byte_arr, format='JPEG', quality=85)
+        img_bytes = img_byte_arr.getvalue()
+        
+        db = get_db()
+        if db is None:
+            return None
+            
+        fs = gridfs.GridFS(db)
+        file_id = fs.put(img_bytes, filename=unique_filename, content_type="image/jpeg", folder=folder)
+        
+        return f"db_uploads/{file_id}"
     except Exception as e:
-        print(f"Image Save Error: {e}")
+        print(f"Image DB Save Error: {e}")
         return None
 
 # ---------- REPORT LOST ----------
